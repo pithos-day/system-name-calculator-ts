@@ -88,7 +88,7 @@ export function generateName(
       updateSeedCache({ c0: cache0, c1: cache1 });
 
       const trigram = name.substring(i, i + 3);
-      const alphasetIdx = cache1[0]![0]!;
+  const alphasetIdx = cache1[0]![0]! % ALPHASETS.length;
       const charWeights = getStringWeights(trigram, alphasetIdx);
 
       const target = Number(bytesToBigint(cache0[0]!)) * TINY_DOUBLE;
@@ -217,7 +217,13 @@ function insertVowel(
   cache0: [number[], number[]],
   index: number,
 ): string {
-  updateSeedCache({ c0: cache0, c1: undefined! });
+  // C# uses cache0.UpdateSeed() which combines cache0[0] and cache0[1]
+  // Simulate by creating a temporary SeedCache where c1[0] = cache0[1]
+  const tempCache: SeedCache = {
+    c0: cache0,
+    c1: [cache0[1]!, new Array<number>(), new Array<number>()],
+  };
+  updateSeedCache(tempCache);
   const result = multiply(cache0[0]!, [0x05]);
   const shrResult = shr(result, 4);
   const vowelIdx = shrResult[0]! % 5;
@@ -233,7 +239,7 @@ function getCharactersFromAlphaset(
 ): string {
   updateSeedCache({ c0: cache0, c1: cache1 });
 
-  const alphasetIdx = cache1[0]![0]!;
+  const alphasetIdx = cache1[0]![0]! % ALPHASETS.length;
   const alphaset = ALPHASETS[alphasetIdx]!;
   const poolSize = Math.floor(alphaset.length / 3);
 
