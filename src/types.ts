@@ -13,11 +13,11 @@
  *   cache0 = [byte[], byte[]]  (2 elements)
  *   cache1 = [byte[], byte[], byte[]]  (3 elements)
  *
- * In TS we represent each element as a 32-bit bigint.
+ * Each element is a little-endian byte array (number[]).
  */
 export interface SeedCache {
-  c0: [bigint, bigint];
-  c1: [bigint, bigint, bigint];
+  c0: [number[], number[]];
+  c1: [number[], number[], number[]];
 }
 
 /**
