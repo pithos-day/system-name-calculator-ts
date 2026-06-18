@@ -62,9 +62,9 @@ export function updateSeedUlong(seed: bigint): bigint {
  */
 export function updateSeedCache(cache: SeedCache, move: number = 1): SeedCache {
   for (let i = 0; i < move; i++) {
-    const result = add(multiply(cache.c0[0], CACHE_MULTIPLIER), cache.c1[0]);
+    const result = add(multiply(cache.c0[0], CACHE_MULTIPLIER), cache.c0[1]);
     cache.c0[0] = shl(result, 4);
-    cache.c1[0] = shr(result, 4);
+    cache.c0[1] = shr(result, 4);
   }
   return cache;
 }
