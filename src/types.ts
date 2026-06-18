@@ -44,7 +44,7 @@ export interface SeedRange {
  * Result of a reverse search operation.
  */
 export interface SearchResult {
-  seed: number;
+  seed: number[];
   signalBoosterCoords?: string;
   rawCoords?: string;
   portalCoords?: string;
