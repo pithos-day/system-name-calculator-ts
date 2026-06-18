@@ -57,7 +57,7 @@ export function bytesToHex(arr: number[]): string {
   if (arr.length === 0) return "00";
   let result = "";
   for (let i = arr.length - 1; i >= 0; i--) {
-    result += arr[i].toString(16).padStart(2, "0").toUpperCase();
+    result += arr[i]!.toString(16).padStart(2, "0").toUpperCase();
   }
   return result;
 }
@@ -68,7 +68,7 @@ export function bytesToHex(arr: number[]): string {
 export function bytesToBigint(arr: number[]): bigint {
   let result = 0n;
   for (let i = arr.length - 1; i >= 0; i--) {
-    result = (result << 8n) | BigInt(arr[i]);
+    result = (result << 8n) | BigInt(arr[i]!);
   }
   return result;
 }
@@ -99,7 +99,7 @@ export function formatBytes(arr: number[]): string {
   if (arr.length === 0) return "Bad array";
   let result = "";
   for (let i = arr.length - 1; i >= 0; i--) {
-    result += arr[i].toString(16).padStart(2, "0").toUpperCase();
+    result += arr[i]!.toString(16).padStart(2, "0").toUpperCase();
   }
   return result;
 }
@@ -128,13 +128,13 @@ export function multiply(a: number[], b: number[]): number[] {
   for (let i = 0; i < a.length; i++) {
     let rem = 0;
     for (let j = 0; j < b.length; j++) {
-      const prd = a[i] * b[j] + rem;
+      const prd = a[i]! * b[j]! + rem;
       rem = (prd >> 8) & BYTE_0XFF;
       const res = prd & BYTE_0XFF;
       const idx = i + j;
 
       if (idx < result.length) {
-        const sum = result[idx] + res;
+        const sum = result[idx]! + res;
         result[idx] = sum & BYTE_0XFF;
         const carry = (sum >> 8) & BYTE_0XFF;
         if (carry !== 0) addCarryAt(result, idx + 1, carry);
@@ -162,7 +162,7 @@ export function multiply(a: number[], b: number[]): number[] {
 export function add(a: number[], b: number[]): number[] {
   const result = [...b];
   for (let i = 0; i < a.length; i++) {
-    addByteAt(result, a[i], i);
+    addByteAt(result, a[i]!, i);
   }
   return result;
 }
@@ -175,7 +175,7 @@ export function add(a: number[], b: number[]): number[] {
 export function sub(a: number[], b: number[]): number[] {
   const result = [...b];
   for (let i = 0; i < a.length; i++) {
-    subByteAt(result, a[i], i);
+    subByteAt(result, a[i]!, i);
   }
   return result;
 }
@@ -251,7 +251,7 @@ export function or(a: number[], b: number[]): number[] {
 export function sxd(arr: number[], extend: number): number[] {
   if (arr.length >= extend) return [...arr];
   const result = [...arr];
-  const signByte = (arr[arr.length - 1] >> 7) === 1 ? BYTE_0XFF : 0;
+  const signByte = (arr[arr.length - 1]! >> 7) === 1 ? BYTE_0XFF : 0;
   while (result.length < extend) {
     result.push(signByte);
   }
@@ -275,7 +275,7 @@ export function zxd(arr: number[], extend: number): number[] {
 
 function addCarryAt(arr: number[], ind: number, carry: number): void {
   if (ind < arr.length) {
-    const sum = arr[ind] + carry;
+    const sum = arr[ind]! + carry;
     arr[ind] = sum & BYTE_0XFF;
     const nextCarry = (sum >> 8) & BYTE_0XFF;
     if (nextCarry !== 0) addCarryAt(arr, ind + 1, nextCarry);
@@ -286,7 +286,7 @@ function addCarryAt(arr: number[], ind: number, carry: number): void {
 
 function addByteAt(arr: number[], byteVal: number, ind: number): void {
   if (ind < arr.length) {
-    const sum = arr[ind] + byteVal;
+    const sum = arr[ind]! + byteVal;
     arr[ind] = sum & BYTE_0XFF;
     const carry = (sum >> 8) & BYTE_0XFF;
     if (carry !== 0) addCarryAt(arr, ind + 1, carry);
@@ -304,7 +304,7 @@ function subByteAt(arr: number[], byteVal: number, ind: number): void {
   if (ind < arr.length) {
     // C# does: sum = (short)(op1 - op2[ind])
     // So: byteVal - arr[ind]
-    const diff = byteVal - arr[ind];
+    const diff = byteVal - arr[ind]!;
     arr[ind] = diff & BYTE_0XFF;
     const rem = (diff >> 8) & BYTE_0XFF; // borrow indicator (0xFF when negative)
     if (rem !== 0) {
@@ -334,13 +334,13 @@ function genericLogical(a: number[], b: number[], op: LogicalOp): number[] {
   for (let i = 0; i < chungus.length; i++) {
     switch (op) {
       case "xor":
-        chungus[i] ^= manlet[i];
+        chungus[i]! ^= manlet[i]!;
         break;
       case "and":
-        chungus[i] &= manlet[i];
+        chungus[i]! &= manlet[i]!;
         break;
       case "or":
-        chungus[i] |= manlet[i];
+        chungus[i]! |= manlet[i]!;
         break;
     }
   }
