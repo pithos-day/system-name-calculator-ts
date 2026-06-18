@@ -75,7 +75,8 @@ export function formatRegionName(seed: number[]): string {
   const MULTIPLIER_A = [0xd7, 0x31, 0xbd, 0x2c, 0x48, 0x81, 0xdd, 0x64];
   reg0 = multiply(xor(reg0, seed), MULTIPLIER_A);
 
-  // C# line 26: Array.Resize(ref register[0], 8)
+  // C# line 26: Array.Resize(ref register[0], 8) — truncates to 8 bytes
+  reg0 = reg0.slice(0, 8);
   while (reg0.length < 8) reg0.push(0);
 
   // C# lines 29-31: register[0] = (uint)(Shr(4) / 2).Xor(register[0]).Multiply(0xE36AA5C613612997)
@@ -85,7 +86,8 @@ export function formatRegionName(seed: number[]): string {
   const uint32Bytes = uint32ToBytes(uint32Div2);
   reg0 = multiply(xor(uint32Bytes, reg0), MULTIPLIER_B);
 
-  // C# line 33: Array.Resize(ref register[0], 8)
+  // C# line 33: Array.Resize(ref register[0], 8) — truncates to 8 bytes
+  reg0 = reg0.slice(0, 8);
   while (reg0.length < 8) reg0.push(0);
 
   // C# lines 37: register[0] = (uint)(Shr(4) / 2).Xor(register[0])
