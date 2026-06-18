@@ -9,7 +9,7 @@ import type { SeedCache } from "./types.js";
 import { ALPHASETS } from "./data/alphabets.js";
 import {
   multiply,
-  add,
+  add as addB,
   sub,
   shr,
   shl,
@@ -72,45 +72,47 @@ export function generateName(
   updateSeedCache({ c0: cache0, c1: cache1 });
 
   // C# line 25: register[0] = cache1[2].Add(0x01).Sub(cache1[1]).Multiply(cache0[0]).Shr(4).Add(cache1[1]).Sub(0x03)
-  let reg0 = sub(add(cache1[2], [0x01]), cache1[1]);
+  let reg0 = sub(addB(cache1[2], [0x01]), cache1[1]);
   reg0 = multiply(reg0, cache0[0]);
   reg0 = shr(reg0, 4);
-  reg0 = add(reg0, cache1[1]);
+  reg0 = addB(reg0, cache1[1]);
   reg0 = sub(reg0, [0x03]);
 
-  const addVal = toInt16Signed(reg0);
+  // C# uses register[0].Sxd(2) for loop limit, but 'add' is decremented separately
+  const addLimit = toInt16Signed(reg0);
+  let add = addLimit;
 
   // C# line 29: if (0 < add)
-  if (addVal > 0) {
+  if (addLimit > 0) {
     let tries = 8;
 
-    for (let i = 0; i < addVal; i++) {
+    for (let i = 0; i < addLimit; i++) {
       updateSeedCache({ c0: cache0, c1: cache1 });
 
       const trigram = name.substring(i, i + 3);
-  const alphasetIdx = cache1[0]![0]! % ALPHASETS.length;
+      const alphasetIdx = cache1[0]![0]! % ALPHASETS.length;
       const charWeights = getStringWeights(trigram, alphasetIdx);
 
-      const target = Number(bytesToBigint(cache0[0]!)) * TINY_DOUBLE;
+      let target = Math.fround(Number(bytesToBigint(cache0[0]!)) * TINY_DOUBLE);
 
       if (charWeights === null) {
         tries--;
         i--;
 
         // Adjust alphaset
-        let val = add(cache1[0], [0x01]);
+        let val = addB(cache1[0], [0x01]);
         val = and(val, [0x07, 0x00, 0x00, 0x80]);
         cache1[0] = val;
 
         if (toInt32(zxd(cache1[0], 4)) < 0) {
           let adjusted = sub(cache1[0], [0x01]);
           adjusted = or(adjusted, [0xf8, 0xff, 0xff, 0xff]);
-          adjusted = add(adjusted, [0x01]);
+          adjusted = addB(adjusted, [0x01]);
           cache1[0] = adjusted;
         }
 
         if (tries === 0) {
-          if (addVal < 3) break;
+          if (add < 3) break;
 
           const temp = getCharactersFromAlphaset(cache0, cache1);
 
@@ -128,18 +130,21 @@ export function generateName(
           name += temp;
           tries = 1;
           i += 2;
+          add -= 3;
         }
       } else {
         let index: number;
 
         if (alternateCharGetter) {
-          const scaledTarget = target * (charWeights.length - 1);
-          index = Math.floor(1.5 * scaledTarget);
+          target = Math.fround(target * (charWeights.length - 1));
+          // C# extracts sign bit, builds float with exponent 0x3F (=0.5), adds to target
+          // For positive target: (int)(0.5 + target) = floor(0.5 + target)
+          index = Math.floor(0.5 + target);
         } else {
           let weight = 0;
           let j = 0;
           for (j = 0; j < charWeights.length; j++) {
-            weight += charWeights[j]![1];
+            weight = Math.fround(weight + Math.fround(charWeights[j]![1]));
             if (weight >= target) break;
           }
           index = j;
@@ -149,6 +154,7 @@ export function generateName(
         if (index < 0) index = 0;
 
         name += charWeights[index]![0];
+        add -= 1;
       }
 
       if (name.length > 63) name = name.substring(0, 64);
@@ -200,7 +206,7 @@ export function generateName(
   const consonanceIndex = getConsecutiveConsonants(name);
   if (consonanceIndex !== -1) {
     updateSeedCache({ c0: cache0, c1: cache1 });
-    const offset = shr(add(multiply(cache0[0]!, [0x03]), [0x01]), 4);
+    const offset = addB(shr(multiply(cache0[0]!, [0x03]), 4), [0x01]);
     const insertIdx = consonanceIndex + toInt32(zxd(offset, 4));
     if (insertIdx >= 0 && insertIdx <= name.length) {
       name = insertVowel(name, cache0, Math.min(insertIdx, name.length));
@@ -217,13 +223,9 @@ function insertVowel(
   cache0: [number[], number[]],
   index: number,
 ): string {
-  // C# uses cache0.UpdateSeed() which combines cache0[0] and cache0[1]
-  // Simulate by creating a temporary SeedCache where c1[0] = cache0[1]
-  const tempCache: SeedCache = {
-    c0: cache0,
-    c1: [cache0[1]!, new Array<number>(), new Array<number>()],
-  };
-  updateSeedCache(tempCache);
+  // C# InsertVowel: seed.UpdateSeed() where seed = cache0
+  // Uses cache0[0] and cache0[1] (matching fixed updateSeedCache)
+  updateSeedCache({ c0: cache0, c1: [[], [], []] });
   const result = multiply(cache0[0]!, [0x05]);
   const shrResult = shr(result, 4);
   const vowelIdx = shrResult[0]! % 5;
@@ -247,7 +249,7 @@ function getCharactersFromAlphaset(
   const register1 = formatShort(multiply(shr(register0, 4), [0x03]));
 
   const startIdx = toInt16(register1);
-  const endIdx = toInt16(add(register1, [0x03]));
+  const endIdx = toInt16(addB(register1, [0x03]));
 
   return alphaset.substring(Math.max(0, startIdx), Math.min(alphaset.length, endIdx));
 }
