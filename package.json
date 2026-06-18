@@ -1,15 +1,34 @@
 {
   "name": "system-name-calculator-ts",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest"
+  "description": "No Man's Sky system/region name generator and reverse-search from coordinates. TypeScript port of C# SystemNameCalculator.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && cp src/data/letter-map.json dist/data/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "no-mans-sky",
+    "nms",
+    "procedural-generation",
+    "name-generator",
+    "coordinates"
+  ],
+  "author": "MiMo V2.5",
+  "license": "MIT",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
@@ -17,7 +36,6 @@
       "onFail": "download"
     }
   },
-  "type": "module",
   "devDependencies": {
     "@types/node": "^25.9.3",
     "tsx": "^4.22.4",
