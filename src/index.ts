@@ -47,8 +47,18 @@ export {
   reconstructPortal,
   portalToGalacticCoords,
   isValidPortal,
+  validateName,
   type ReverseSearchOptions,
 } from "./reverse-search.js";
+
+// ─── Name Validation ────────────────────────────────────────────────
+
+export {
+  isValidSystemName,
+  isValidRegionName,
+  isValidPlanetName,
+  type ValidationResult,
+} from "./name-validation.js";
 
 // ─── Low-Level Utilities ─────────────────────────────────────────────
 

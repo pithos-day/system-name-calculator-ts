@@ -24,6 +24,12 @@ import {
   formatRegionBoosterCoords,
   formatRegionRawCoords,
 } from "./coords.js";
+import {
+  isValidSystemName,
+  isValidRegionName,
+  isValidPlanetName,
+  type ValidationResult,
+} from "./name-validation.js";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -55,6 +61,12 @@ export function findSystemSeeds(
   name: string,
   options: ReverseSearchOptions,
 ): SearchResult[] {
+  // Validate name before expensive search
+  const validation = isValidSystemName(name);
+  if (!validation.valid) {
+    return [];
+  }
+
   const galaxy = options.galaxy;
   const cap = options.maxResults ?? 10;
   const start = options.galCoordsStart ?? 0;
@@ -116,6 +128,12 @@ export function findRegionSeeds(
   name: string,
   options: ReverseSearchOptions,
 ): SearchResult[] {
+  // Validate name before expensive search
+  const validation = isValidRegionName(name);
+  if (!validation.valid) {
+    return [];
+  }
+
   const galaxy = options.galaxy;
   const cap = options.maxResults ?? 10;
   const start = options.galCoordsStart ?? 0;
@@ -176,6 +194,29 @@ export function findPlanetNames(
     seed: "0x" + seed.toString(16).toUpperCase().padStart(16, "0"),
     name: planetName(seed),
   }));
+}
+
+/**
+ * Validate a name for reverse search.
+ *
+ * @param name - Name to validate
+ * @param type - Type of name: "system", "region", or "planet"
+ * @returns ValidationResult with valid flag and optional reason
+ */
+export function validateName(
+  name: string,
+  type: "system" | "region" | "planet",
+): ValidationResult {
+  switch (type) {
+    case "system":
+      return isValidSystemName(name);
+    case "region":
+      return isValidRegionName(name);
+    case "planet":
+      return isValidPlanetName(name);
+    default:
+      return { valid: false, reason: `Unknown name type: ${type}` };
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
