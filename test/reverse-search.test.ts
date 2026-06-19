@@ -9,6 +9,7 @@ import {
   reconstructPortal,
   portalToGalacticCoords,
   isValidPortal,
+  MAX_REVERSE_SEARCH_SYS,
 } from "../src/index.js";
 
 describe("Reverse Search", () => {
@@ -393,5 +394,109 @@ describe("Portal Validation", () => {
         expect(isValidPortal(resultPortal)).toBe(true);
       }
     });
+  });
+});
+
+describe("Reverse Search - SYS Heuristic Filter", () => {
+  it("MAX_REVERSE_SEARCH_SYS is exported and equals 600", () => {
+    expect(MAX_REVERSE_SEARCH_SYS).toBe(600);
+  });
+
+  it("findSystemSeeds respects SYS filter: SYS=599 is included", () => {
+    // Build a seed with sysId=599 and a known galCoords
+    const galCoords = 0xFC63C321;
+    const sysId = 599;
+    const systemIndex = (sysId << 8) | (9 & 0xFF); // galaxy=9
+    const seed = [
+      galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
+      systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
+      0, 0, 0, 0,
+    ];
+    const name = formatSystemName(seed);
+
+    const results = findSystemSeeds(name, {
+      galaxy: 9,
+      maxResults: 50,
+      galCoordsStart: galCoords,
+      galCoordsEnd: galCoords,
+    });
+
+    // SYS=599 is within the filter threshold, so at least one result should be found
+    expect(results.length).toBeGreaterThan(0);
+  });
+
+  it("findSystemSeeds respects SYS filter: SYS=600 is included", () => {
+    const galCoords = 0xFC63C321;
+    const sysId = 600;
+    const systemIndex = (sysId << 8) | (9 & 0xFF);
+    const seed = [
+      galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
+      systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
+      0, 0, 0, 0,
+    ];
+    const name = formatSystemName(seed);
+
+    const results = findSystemSeeds(name, {
+      galaxy: 9,
+      maxResults: 50,
+      galCoordsStart: galCoords,
+      galCoordsEnd: galCoords,
+    });
+
+    // SYS=600 is at the filter threshold, so at least one result should be found
+    expect(results.length).toBeGreaterThan(0);
+  });
+
+  it("findSystemSeeds respects SYS filter: SYS=601 is excluded", () => {
+    const galCoords = 0xFC63C321;
+    const sysId = 601;
+    const systemIndex = (sysId << 8) | (9 & 0xFF);
+    const seed = [
+      galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
+      systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
+      0, 0, 0, 0,
+    ];
+    const name = formatSystemName(seed);
+
+    const results = findSystemSeeds(name, {
+      galaxy: 9,
+      maxResults: 50,
+      galCoordsStart: galCoords,
+      galCoordsEnd: galCoords,
+    });
+
+    // SYS=601 is above the filter threshold, so no results should be found
+    // (the name was generated from sysId=601, but the filter skips it)
+    const foundSys601 = results.some(r => {
+      const rSysId = r.seed[5]! | (r.seed[6]! << 8);
+      return rSysId === sysId;
+    });
+    expect(foundSys601).toBe(false);
+  });
+
+  it("findRegionSeeds respects SYS filter: SYS=601 is excluded", () => {
+    const galCoords = 0xFC63C321;
+    const sysId = 601;
+    const systemIndex = (sysId << 8) | (9 & 0xFF);
+    const seed = [
+      galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
+      systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
+      0, 0, 0, 0,
+    ];
+    const name = formatRegionName(seed);
+
+    const results = findRegionSeeds(name, {
+      galaxy: 9,
+      maxResults: 50,
+      galCoordsStart: galCoords,
+      galCoordsEnd: galCoords,
+    });
+
+    // SYS=601 is above the filter threshold, so no results should be found
+    const foundSys601 = results.some(r => {
+      const rSysId = r.seed[5]! | (r.seed[6]! << 8);
+      return rSysId === sysId;
+    });
+    expect(foundSys601).toBe(false);
   });
 });

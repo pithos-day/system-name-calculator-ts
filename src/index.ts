@@ -48,6 +48,7 @@ export {
   portalToGalacticCoords,
   isValidPortal,
   validateName,
+  MAX_REVERSE_SEARCH_SYS,
   type ReverseSearchOptions,
 } from "./reverse-search.js";
 

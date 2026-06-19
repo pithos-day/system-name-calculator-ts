@@ -37,6 +37,15 @@ const TINY_DOUBLE = 2.3283064370807974e-10;
 const U32_MAX = 0xffffffff;
 const SEARCH_PROGRESS_INTERVAL = 0x04000000; // ~67M iterations per progress tick
 
+/**
+ * Heuristic filter for reverse search: skip system indices above this threshold.
+ *
+ * NOTE: This is NOT a hard constraint from the game's generation spec.
+ * It is an optimization filter — in normal generation, SYS rarely exceeds 600.
+ * Adjust this value if needed for edge cases.
+ */
+export const MAX_REVERSE_SEARCH_SYS = 600;
+
 // ─── Public API ───────────────────────────────────────────────────────
 
 export interface ReverseSearchOptions {
@@ -81,7 +90,9 @@ export function findSystemSeeds(
     // Try a range of systemIndex values (0-4095 for system_id, combined with galaxy)
     // The systemIndex = ((portal & 0x0FFF00000000) >> 24) | galaxy
     // This gives system_id in bits 8-19, galaxy in bits 0-7
+    // Heuristic filter: skip high sysId values (optimization, not a hard constraint)
     for (let sysId = 0; sysId < 0x1000; sysId++) {
+      if (sysId > MAX_REVERSE_SEARCH_SYS) break;
       const systemIndex = (sysId << 8) | (galaxy & 0xFF);
       const sysIndexBytes = u32ToLEBytes(systemIndex);
 
@@ -146,6 +157,7 @@ export function findRegionSeeds(
     const galCoordsBytes = u32ToLEBytes(galCoords);
 
     for (let sysId = 0; sysId < 0x1000; sysId++) {
+      if (sysId > MAX_REVERSE_SEARCH_SYS) break;
       const systemIndex = (sysId << 8) | (galaxy & 0xFF);
       const sysIndexBytes = u32ToLEBytes(systemIndex);
 
