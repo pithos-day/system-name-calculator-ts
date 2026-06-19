@@ -19,11 +19,7 @@ import {
   bytesToBigint,
 } from "./byte-utils.js";
 import { updateSeedCache } from "./seed.js";
-
-// ─── Constants ────────────────────────────────────────────────────────
-
-const TINY_DOUBLE = 2.3283064370807974e-10;
-const VOWELS = "aeiou";
+import { TINY_DOUBLE, VOWELS } from "./constants.js";
 
 // ─── Letter Map Types ────────────────────────────────────────────────
 

@@ -11,22 +11,16 @@
  * 4. Pattern: vowel/consonant rules from generateName
  */
 
+import { VOWELS, ROMAN_NUMERALS, PLANET_ADORNMENTS, PLANET_STYLES } from "./constants.js";
+
 // ─── Constants ────────────────────────────────────────────────────────
 
-const VOWELS = "aeiou";
 const CONSONANTS = "bcdfghjklmnpqrstvwxyz";
-
-const ROMAN_NUMERALS = [
-  "I", "II", "III", "IV", "V", "VI", "VII",
-  "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI",
-  "XVII", "XVIII", "XIX", "XX",
-];
 
 const REGION_ADORNMENTS = [
   "Sea of",
   "Clouds of",
   "Gap of",
-  "Sea of",
   "Anomaly of",
   "Expanse of",
   "Trio of",
@@ -34,33 +28,6 @@ const REGION_ADORNMENTS = [
   "Heaven of",
   "Oceans of",
   "Beyond",
-];
-
-const PLANET_ADORNMENTS = [
-  "Prime",
-  "Major",
-  "Minor",
-  "Alpha",
-  "Beta",
-  "Gamma",
-  "Delta",
-  "Omega",
-  "Sigma",
-  "Tau",
-];
-
-const PLANET_STYLES = [
-  "%PROCNORM%",
-  "%PROCNORM% %ADORNMENT%",
-  "%PROCNORM% %NUMERAL%",
-  "%PROCNORM% %SHORTCODE%",
-  "%PROCLONG% %PROCSHORT%",
-  "%PROCSHORT% %LONGCODE%",
-  "%PROCNORM%",
-  "%PROCNORM% %ADORNMENT%",
-  "%PROCNORM% %NUMERAL%",
-  "Style 9",
-  "New %PROCNORM%",
 ];
 
 // ─── Validation Result ────────────────────────────────────────────────

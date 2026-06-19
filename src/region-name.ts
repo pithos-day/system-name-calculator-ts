@@ -12,15 +12,12 @@ import {
   shr,
   shl,
   xor,
+  bigintToBytes,
+  bytesToBigint,
 } from "./byte-utils.js";
 import { CACHE_MULTIPLIER, updateSeedCache } from "./seed.js";
 import { generateName } from "./generator.js";
-
-// ─── Constants ────────────────────────────────────────────────────────
-
-const MASK64 = 0xFFFFFFFFFFFFFFFFn;
-const CONST_A = 0x64DD81482CBD31D7n;
-const CONST_B = 0xE36AA5C613612997n;
+import { MASK64, CONST_A, CONST_B } from "./constants.js";
 
 /**
  * Region adornments (proc-gen suffixes/prefixes).
@@ -81,8 +78,8 @@ export function regionName(portal_code: bigint, galaxy: number): string {
 
   // Step 3: Initialize PRNG cache from seed
   const cache0: [number[], number[]] = [
-    bigintToLEBytes(seed & 0xFFFFFFFFn),
-    bigintToLEBytes(seed >> 32n),
+    bigintToBytes(seed & 0xFFFFFFFFn),
+    bigintToBytes(seed >> 32n),
   ];
   const cache1: [number[], number[], number[]] = [
     [0x00], // alphaset_index = 0
@@ -128,28 +125,9 @@ export function formatRegionName(seed: number[]): string {
   // Seed is little-endian byte array: [galactic_coords (4 bytes LE), upper (4 bytes LE)]
   // But the old C# format uses a different hash, so this is kept for backward compatibility
   // with the reverse-search which uses its own seed derivation.
-  const portal_code = bytesToLEBigint(seed.slice(0, 4));
-  const galaxy = bytesToLEBigint(seed.slice(4, 8));
+  const portal_code = bytesToBigint(seed.slice(0, 4));
+  const galaxy = bytesToBigint(seed.slice(4, 8));
   return regionName(portal_code, Number(galaxy));
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────
-
-function bigintToLEBytes(value: bigint): number[] {
-  if (value === 0n) return [0];
-  const bytes: number[] = [];
-  let v = value;
-  while (v > 0n) {
-    bytes.push(Number(v & 0xFFn));
-    v >>= 8n;
-  }
-  return bytes;
-}
-
-function bytesToLEBigint(bytes: number[]): bigint {
-  let result = 0n;
-  for (let i = bytes.length - 1; i >= 0; i--) {
-    result = (result << 8n) | BigInt(bytes[i]!);
-  }
-  return result;
-}

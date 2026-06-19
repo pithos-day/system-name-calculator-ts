@@ -7,55 +7,18 @@
 
 import { generateName } from "./generator.js";
 import { updateSeedCache, updateSeedUlong } from "./seed.js";
+import { bigintToBytes, bytesToBigint } from "./byte-utils.js";
 import {
-  multiply,
-  add,
-  shr,
-  shl,
-  xor,
-} from "./byte-utils.js";
-
-// ─── Constants ────────────────────────────────────────────────────────
-
-const MASK64 = 0xFFFFFFFFFFFFFFFFn;
-const MASK32 = 0xFFFFFFFFn;
-const CONST_A = 0x64DD81482CBD31D7n;
-const CONST_B = 0xE36AA5C613612997n;
-const MULTIPLIER = 0x5A76F899n;
-const TINY_DOUBLE = 2.3283064370807974e-10;
-
-const ROMAN_NUMERALS = [
-  "I", "II", "III", "IV", "V", "VI", "VII",
-  "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI",
-  "XVII", "XVIII", "XIX", "XX",
-];
-
-const PLANET_ADORNMENTS = [
-  "Prime",
-  "Major",
-  "Minor",
-  "Alpha",
-  "Beta",
-  "Gamma",
-  "Delta",
-  "Omega",
-  "Sigma",
-  "Tau",
-];
-
-const PLANET_STYLES = [
-  "%PROCNORM%",
-  "%PROCNORM% %ADORNMENT%",
-  "%PROCNORM% %NUMERAL%",
-  "%PROCNORM% %SHORTCODE%",
-  "%PROCLONG% %PROCSHORT%",
-  "%PROCSHORT% %LONGCODE%",
-  "%PROCNORM%",
-  "%PROCNORM% %ADORNMENT%",
-  "%PROCNORM% %NUMERAL%",
-  "Style 9",
-  "New %PROCNORM%",
-];
+  MASK64,
+  MASK32,
+  CONST_A,
+  CONST_B,
+  MULTIPLIER,
+  TINY_DOUBLE,
+  ROMAN_NUMERALS,
+  PLANET_ADORNMENTS,
+  PLANET_STYLES,
+} from "./constants.js";
 
 // ─── PRNG (matching nms_namegen prng.py) ──────────────────────────────
 
@@ -497,8 +460,8 @@ export function planetName(planetSeedOrCode: bigint, galaxy?: number): string {
   // Generate procedural names (matching generator.py generateName)
   // procnorm: alphaset 7, min_length 4, max_length 8
   const procnormCache0: [number[], number[]] = [
-    bigintToLEBytes(rngState.seed & MASK32),
-    bigintToLEBytes(rngState.seed >> 32n),
+    bigintToBytes(rngState.seed & MASK32),
+    bigintToBytes(rngState.seed >> 32n),
   ];
   const procnormCache1: [number[], number[], number[]] = [
     [0x07], [0x04], [0x08],
@@ -506,34 +469,34 @@ export function planetName(planetSeedOrCode: bigint, galaxy?: number): string {
   let procnorm = generateName(procnormCache0, procnormCache1);
   procnorm = procnorm.charAt(0).toUpperCase() + procnorm.substring(1);
   // Sync rng state with cache0 after generateName
-  rngState.seed = (bytesToLEBigint(procnormCache0[1]) << 32n) |
-    bytesToLEBigint(procnormCache0[0]);
+  rngState.seed = (bytesToBigint(procnormCache0[1]) << 32n) |
+    bytesToBigint(procnormCache0[0]);
 
   // procshort: alphaset 5, min_length 4, max_length 5
   const procshortCache0: [number[], number[]] = [
-    bigintToLEBytes(rngState.seed & MASK32),
-    bigintToLEBytes(rngState.seed >> 32n),
+    bigintToBytes(rngState.seed & MASK32),
+    bigintToBytes(rngState.seed >> 32n),
   ];
   const procshortCache1: [number[], number[], number[]] = [
     [0x05], [0x04], [0x05],
   ];
   let procshort = generateName(procshortCache0, procshortCache1);
   procshort = procshort.charAt(0).toUpperCase() + procshort.substring(1);
-  rngState.seed = (bytesToLEBigint(procshortCache0[1]) << 32n) |
-    bytesToLEBigint(procshortCache0[0]);
+  rngState.seed = (bytesToBigint(procshortCache0[1]) << 32n) |
+    bytesToBigint(procshortCache0[0]);
 
   // proclong: alphaset 7, min_length 6, max_length 10
   const proclongCache0: [number[], number[]] = [
-    bigintToLEBytes(rngState.seed & MASK32),
-    bigintToLEBytes(rngState.seed >> 32n),
+    bigintToBytes(rngState.seed & MASK32),
+    bigintToBytes(rngState.seed >> 32n),
   ];
   const proclongCache1: [number[], number[], number[]] = [
     [0x07], [0x06], [0x0A],
   ];
   let proclong = generateName(proclongCache0, proclongCache1);
   proclong = proclong.charAt(0).toUpperCase() + proclong.substring(1);
-  rngState.seed = (bytesToLEBigint(proclongCache0[1]) << 32n) |
-    bytesToLEBigint(proclongCache0[0]);
+  rngState.seed = (bytesToBigint(proclongCache0[1]) << 32n) |
+    bytesToBigint(proclongCache0[0]);
 
   // Select style (matching planet.py lines 88-94)
   let namegenStyle = prngRandom(rngState, 9);
@@ -557,22 +520,3 @@ export function planetName(planetSeedOrCode: bigint, galaxy?: number): string {
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────
-
-function bigintToLEBytes(value: bigint): number[] {
-  if (value === 0n) return [0];
-  const bytes: number[] = [];
-  let v = value;
-  while (v > 0n) {
-    bytes.push(Number(v & 0xFFn));
-    v >>= 8n;
-  }
-  return bytes;
-}
-
-function bytesToLEBigint(bytes: number[]): bigint {
-  let result = 0n;
-  for (let i = bytes.length - 1; i >= 0; i--) {
-    result = (result << 8n) | BigInt(bytes[i]!);
-  }
-  return result;
-}

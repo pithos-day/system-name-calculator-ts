@@ -39,7 +39,6 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────
 
-const TINY_DOUBLE = 2.3283064370807974e-10;
 const U32_MAX = 0xffffffff;
 const SEARCH_PROGRESS_INTERVAL = 0x04000000; // ~67M iterations per progress tick
 
