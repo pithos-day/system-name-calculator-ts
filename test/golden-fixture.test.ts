@@ -19,6 +19,22 @@ import {
   formatRegionRawCoords,
   MAX_REVERSE_SEARCH_SYS,
 } from "../src/index.js";
+import {
+  GALAXY,
+  PORTAL,
+  GAL_COORDS,
+  SYS_ID,
+  EXPECTED_SYSTEM_NAME,
+  EXPECTED_REGION_NAME,
+  EXPECTED_PLANET_COUNT,
+  EXPECTED_MOON_COUNT,
+  EXPECTED_PLANET_SEEDS,
+  EXPECTED_SIGNED_COORDS,
+  EXPECTED_SIGNAL_BOOSTER_COORDS,
+  EXPECTED_RAW_COORDS,
+  EXPECTED_PORTAL_COORDS,
+  EXPECTED_IS_VALID,
+} from "./test-fixture.js";
 
 // ─── Golden Test Fixture ──────────────────────────────────────────────
 // Standard reference case for compatibility verification.
@@ -26,43 +42,29 @@ import {
 // which matches nms_namegen behavior.
 
 const FIXTURE = {
-  galaxy: 0,
+  galaxy: GALAXY,
   portalCode: "202101D40677",
-  portal: BigInt("0x202101D40677"),
+  portal: PORTAL,
 
   // Signed galactic coordinates from portalToGalacticCoords
-  signedCoords: { x: 1655, y: 1, z: -704 },
+  signedCoords: EXPECTED_SIGNED_COORDS,
 
   // Unsigned display format: X:Z:Y:GLXY (signal booster format)
-  signalBoosterCoords: "0E76:0080:153F:0021",
+  signalBoosterCoords: EXPECTED_SIGNAL_BOOSTER_COORDS,
 
   // Raw coordinate string
-  rawCoords: "X: 1655, Y: 1, Z: -704",
+  rawCoords: EXPECTED_RAW_COORDS,
 
   // Portal coordinates (GRF format)
-  portalCoords: "000101D40677",
+  portalCoords: EXPECTED_PORTAL_COORDS,
 
-  systemName: "Loytkara",
-  regionName: "Drlenj Expanse",
+  systemName: EXPECTED_SYSTEM_NAME,
+  regionName: EXPECTED_REGION_NAME,
 
-  planetCount: 5,
-  moonCount: 1,
-  planetNames: [
-    "Nock O23",
-    "Hasenden VII",
-    "Cogge",
-    "Vassis Major",
-    "Ibata 17/T1",
-    "Sissica",
-  ],
-  planetSeeds: [
-    0xAAE08F94127F19CCn,
-    0xA4CD13B9D04DE803n,
-    0x18B58C93FAA11726n,
-    0xC219DD53EEBC0BEBn,
-    0x54D66E09B13B8CCFn,
-    0x9E11087C3635073Bn,
-  ],
+  planetCount: EXPECTED_PLANET_COUNT,
+  moonCount: EXPECTED_MOON_COUNT,
+  planetNames: EXPECTED_PLANET_SEEDS.map((p) => p.name),
+  planetSeeds: EXPECTED_PLANET_SEEDS.map((p) => p.seed),
 } as const;
 
 // ─── Portal Code → Galactic Coordinates ───────────────────────────────
@@ -84,12 +86,12 @@ describe("Golden Fixture: Portal Code → Galactic Coordinates", () => {
 
   it("formatRegionRawCoords matches expected display", () => {
     const result = formatRegionRawCoords(FIXTURE.portal);
-    expect(result).toBe("X: 1655, Y: 1, Z: -704");
+    expect(result).toBe(EXPECTED_RAW_COORDS);
   });
 
   it("formatRegionGrfCoords produces portal coordinates", () => {
     const result = formatRegionGrfCoords(FIXTURE.portal);
-    expect(result).toBe("000101D40677");
+    expect(result).toBe(EXPECTED_PORTAL_COORDS);
   });
 });
 
@@ -181,18 +183,12 @@ describe("Golden Fixture: Planet Name Generation", () => {
 // ─── Reverse Search Roundtrip ─────────────────────────────────────────
 
 describe("Golden Fixture: Reverse Search Roundtrip", () => {
-  it("finds system seed for Loytkara and reconstructs portal", () => {
-    // Use targeted galCoords range for fast search
-    const rawX = Number(FIXTURE.portal & 0xFFFn);
-    const rawY = Number((FIXTURE.portal >> 24n) & 0xFFn);
-    const rawZ = Number((FIXTURE.portal >> 12n) & 0xFFFn);
-    const galCoords = ((rawY << 24) | (rawZ << 12) | rawX) >>> 0;
-
+  it("finds system seed and reconstructs portal", () => {
     const results = findSystemSeeds(FIXTURE.systemName, {
       galaxy: FIXTURE.galaxy,
       maxResults: 50,
-      galCoordsStart: galCoords,
-      galCoordsEnd: galCoords,
+      galCoordsStart: GAL_COORDS,
+      galCoordsEnd: GAL_COORDS,
     });
 
     expect(results.length).toBeGreaterThan(0);
@@ -202,23 +198,18 @@ describe("Golden Fixture: Reverse Search Roundtrip", () => {
     const sysId = match.seed[5]! | (match.seed[6]! << 8);
     const reconstructed = reconstructPortal(matchGalCoords, sysId, FIXTURE.galaxy);
 
-    expect(matchGalCoords).toBe(galCoords);
+    expect(matchGalCoords).toBe(GAL_COORDS);
     expect(reconstructed & 0x0FFFFFFFFFFn).toBe(FIXTURE.portal & 0x0FFFFFFFFFFn);
     expect(isValidPortal(reconstructed)).toBe(true);
     expect(formatSystemName(match.seed)).toBe(FIXTURE.systemName);
   });
 
   it("reverse search finds result within SYS filter threshold", () => {
-    const rawX = Number(FIXTURE.portal & 0xFFFn);
-    const rawY = Number((FIXTURE.portal >> 24n) & 0xFFn);
-    const rawZ = Number((FIXTURE.portal >> 12n) & 0xFFFn);
-    const galCoords = ((rawY << 24) | (rawZ << 12) | rawX) >>> 0;
-
     const results = findSystemSeeds(FIXTURE.systemName, {
       galaxy: FIXTURE.galaxy,
       maxResults: 50,
-      galCoordsStart: galCoords,
-      galCoordsEnd: galCoords,
+      galCoordsStart: GAL_COORDS,
+      galCoordsEnd: GAL_COORDS,
     });
 
     // All results should have sysId <= MAX_REVERSE_SEARCH_SYS

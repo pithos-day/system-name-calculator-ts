@@ -6,10 +6,15 @@ import {
 } from "../src/region-name.js";
 import { readFileSync } from "fs";
 import { join } from "path";
+import {
+  GALAXY,
+  PORTAL,
+  EXPECTED_REGION_NAME,
+} from "./test-fixture.js";
 
 describe("regionName", () => {
-  it("matches Python test case: Jeffriy Instability", () => {
-    expect(regionName(0x01fbff285671n, 9)).toBe("Jeffriy Instability");
+  it("matches standard fixture portal code", () => {
+    expect(regionName(PORTAL, GALAXY)).toBe(EXPECTED_REGION_NAME);
   });
 
   it("matches all nms_namegen region_names fixture", () => {

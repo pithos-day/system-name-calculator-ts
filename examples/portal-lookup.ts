@@ -6,9 +6,8 @@
  *   npx tsx examples/portal-lookup.ts <portal_code> <galaxy> [--json]
  *
  * Examples:
- *   npx tsx examples/portal-lookup.ts 102DFC63C321 9
- *   npx tsx examples/portal-lookup.ts 102DFC63C321 9 --json
- *   npx tsx examples/portal-lookup.ts 115EFF285671 9
+ *   npx tsx examples/portal-lookup.ts 202101D40677 0
+ *   npx tsx examples/portal-lookup.ts 202101D40677 0 --json
  */
 
 import {
@@ -67,8 +66,8 @@ function main() {
     console.error("Usage: npx tsx examples/portal-lookup.ts <portal_code> <galaxy> [--json]");
     console.error("");
     console.error("Examples:");
-    console.error("  npx tsx examples/portal-lookup.ts 102DFC63C321 9");
-    console.error("  npx tsx examples/portal-lookup.ts 102DFC63C321 9 --json");
+    console.error("  npx tsx examples/portal-lookup.ts 202101D40677 0");
+    console.error("  npx tsx examples/portal-lookup.ts 202101D40677 0 --json");
     process.exit(1);
   }
 

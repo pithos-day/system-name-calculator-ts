@@ -12,15 +12,19 @@ import {
   findSystemSeeds,
   findRegionSeeds,
 } from "../src/index.js";
+import {
+  GALAXY,
+  PORTAL,
+  GAL_COORDS,
+  EXPECTED_SYSTEM_NAME,
+  EXPECTED_REGION_NAME,
+  EXPECTED_PLANET_SEEDS,
+} from "./test-fixture.js";
 
 describe("Name Validation", () => {
-  const GALAXY = 9;
-  const PORTAL_HEX = "102DFC63C321";
-  const portal = BigInt("0x" + PORTAL_HEX);
-
   describe("System Name Validation", () => {
     it("validates actual generated system names", () => {
-      const name = systemName(portal, GALAXY);
+      const name = EXPECTED_SYSTEM_NAME;
       const result = isValidSystemName(name);
       expect(result.valid).toBe(true);
     });
@@ -43,7 +47,7 @@ describe("Name Validation", () => {
     });
 
     it("validates hyphenated names", () => {
-      const name = systemName(portal, GALAXY);
+      const name = EXPECTED_SYSTEM_NAME;
       // If the name is not hyphenated, test with a valid hyphenated format
       if (!name.includes("-")) {
         expect(isValidSystemName("Abc-Def").valid).toBe(true);
@@ -66,7 +70,7 @@ describe("Name Validation", () => {
 
   describe("Region Name Validation", () => {
     it("validates actual generated region names", () => {
-      const name = regionName(portal, GALAXY);
+      const name = EXPECTED_REGION_NAME;
       const result = isValidRegionName(name);
       expect(result.valid).toBe(true);
     });
@@ -87,7 +91,7 @@ describe("Name Validation", () => {
 
   describe("Planet Name Validation", () => {
     it("validates actual generated planet names", () => {
-      const ps = planetSeeds(portal, GALAXY);
+      const ps = planetSeeds(PORTAL, GALAXY);
       for (const seed of ps.planet_seeds) {
         const name = planetName(seed);
         const result = isValidPlanetName(name);
@@ -136,18 +140,17 @@ describe("Name Validation", () => {
 
   describe("validateName wrapper", () => {
     it("validates system names", () => {
-      const name = systemName(portal, GALAXY);
+      const name = EXPECTED_SYSTEM_NAME;
       expect(validateName(name, "system").valid).toBe(true);
     });
 
     it("validates region names", () => {
-      const name = regionName(portal, GALAXY);
+      const name = EXPECTED_REGION_NAME;
       expect(validateName(name, "region").valid).toBe(true);
     });
 
     it("validates planet names", () => {
-      const ps = planetSeeds(portal, GALAXY);
-      const name = planetName(ps.planet_seeds[0]!);
+      const name = EXPECTED_PLANET_SEEDS[0]!.name;
       expect(validateName(name, "planet").valid).toBe(true);
     });
 
@@ -178,17 +181,13 @@ describe("Name Validation", () => {
     });
 
     it("finds results for valid system name", () => {
-      const name = systemName(portal, GALAXY);
-      const rawX = Number(portal & 0xFFFn);
-      const rawY = Number((portal >> 24n) & 0xFFn);
-      const rawZ = Number((portal >> 12n) & 0xFFFn);
-      const galCoords = ((rawY << 24) | (rawZ << 12) | rawX) >>> 0;
+      const name = EXPECTED_SYSTEM_NAME;
 
       const results = findSystemSeeds(name, {
         galaxy: GALAXY,
         maxResults: 5,
-        galCoordsStart: galCoords,
-        galCoordsEnd: galCoords,
+        galCoordsStart: GAL_COORDS,
+        galCoordsEnd: GAL_COORDS,
       });
       expect(results.length).toBeGreaterThan(0);
     });

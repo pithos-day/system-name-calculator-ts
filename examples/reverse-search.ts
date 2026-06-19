@@ -17,9 +17,9 @@
  *   --json                 JSON output
  *
  * Examples:
- *   npx tsx examples/reverse-search.ts "Desnoz-Gasu" 9 --start FC63C321 --end FC63C321
- *   npx tsx examples/reverse-search.ts "Ejblifirtc" 9 --type region --start 0 --end FFFF
- *   npx tsx examples/reverse-search.ts "Desnoz-Gasu" 9 --json --start FC63C321 --end FC63C321
+ *   npx tsx examples/reverse-search.ts "Loytkara" 0 --start 1D40677 --end 1D40677
+ *   npx tsx examples/reverse-search.ts "Drlenj Expanse" 0 --type region --start 0 --end FFFF
+ *   npx tsx examples/reverse-search.ts "Loytkara" 0 --json --start 1D40677 --end 1D40677
  */
 
 import {
@@ -85,8 +85,8 @@ function main() {
     console.error("  --json                 JSON output");
     console.error("");
     console.error("Examples:");
-    console.error("  npx tsx examples/reverse-search.ts \"Desnoz-Gasu\" 9 --start FC63C321 --end FC63C321");
-    console.error("  npx tsx examples/reverse-search.ts \"Ejblifirtc\" 9 --type region --start 0 --end FFFF");
+    console.error("  npx tsx examples/reverse-search.ts \"Loytkara\" 0 --start 1D40677 --end 1D40677");
+    console.error("  npx tsx examples/reverse-search.ts \"Drlenj Expanse\" 0 --type region --start 0 --end FFFF");
     process.exit(1);
   }
 

@@ -11,24 +11,24 @@ import {
   isValidPortal,
   MAX_REVERSE_SEARCH_SYS,
 } from "../src/index.js";
+import {
+  GALAXY,
+  PORTAL,
+  GAL_COORDS,
+  SYS_ID,
+  EXPECTED_SYSTEM_NAME,
+  EXPECTED_REGION_NAME,
+} from "./test-fixture.js";
 
 describe("Reverse Search", () => {
-  const GALAXY = 9;
-  const PORTAL_HEX = "102DFC63C321";
-  const portal = BigInt("0x" + PORTAL_HEX);
-
-  // Extract galCoords from portal for targeted search
-  const rawX = Number(portal & 0xFFFn);
-  const rawY = Number((portal >> 24n) & 0xFFn);
-  const rawZ = Number((portal >> 12n) & 0xFFFn);
-  const sysId = Number((portal >> 32n) & 0xFFFn);
-  const galCoords =
-    ((rawY << 24) | (rawZ << 12) | rawX) >>> 0;
+  const portal = PORTAL;
+  const galCoords = GAL_COORDS;
+  const sysId = SYS_ID;
 
   it("reconstructPortal produces portal (without planet bits)", () => {
     const result = reconstructPortal(galCoords, sysId, GALAXY);
 
-    // reconstructPortal doesn't set planet bits (P=0), original has P=1
+    // reconstructPortal doesn't set planet bits (P=0), original has P=2
     // So mask out planet bits for comparison
     const resultMasked = result & 0x0FFFFFFFFFFn;
     const portalMasked = portal & 0x0FFFFFFFFFFn;
@@ -36,7 +36,7 @@ describe("Reverse Search", () => {
   });
 
   it("findSystemSeeds finds portal for known system name (single galCoords)", () => {
-    const expectedName = systemName(portal, GALAXY);
+    const expectedName = EXPECTED_SYSTEM_NAME;
 
     const results = findSystemSeeds(expectedName, {
       galaxy: GALAXY,
@@ -53,7 +53,7 @@ describe("Reverse Search", () => {
   });
 
   it("findRegionSeeds finds portal for known region name (single galCoords)", () => {
-    const expectedName = regionName(portal, GALAXY);
+    const expectedName = EXPECTED_REGION_NAME;
 
     const results = findRegionSeeds(expectedName, {
       galaxy: GALAXY,
@@ -70,7 +70,7 @@ describe("Reverse Search", () => {
   });
 
   it("full roundtrip: system name via forward + reverse", () => {
-    const expectedSystem = systemName(portal, GALAXY);
+    const expectedSystem = EXPECTED_SYSTEM_NAME;
 
     const results = findSystemSeeds(expectedSystem, {
       galaxy: GALAXY,
@@ -86,7 +86,7 @@ describe("Reverse Search", () => {
   });
 
   it("findSystemSeeds respects maxResults", () => {
-    const expectedName = systemName(portal, GALAXY);
+    const expectedName = EXPECTED_SYSTEM_NAME;
 
     const results = findSystemSeeds(expectedName, {
       galaxy: GALAXY,
@@ -354,7 +354,7 @@ describe("Portal Validation", () => {
 
   describe("Portal roundtrip conversion", () => {
     it("portal → galCoords → reconstructPortal preserves lower 44 bits", () => {
-      const originalPortal = BigInt("0x102DFC63C321");
+      const originalPortal = PORTAL;
 
       const rawX = Number(originalPortal & 0xFFFn);
       const rawY = Number((originalPortal >> 24n) & 0xFFn);
@@ -362,26 +362,20 @@ describe("Portal Validation", () => {
       const sysId = Number((originalPortal >> 32n) & 0xFFFn);
       const galCoords = ((rawY << 24) | (rawZ << 12) | rawX) >>> 0;
 
-      const reconstructed = reconstructPortal(galCoords, sysId, 9);
+      const reconstructed = reconstructPortal(galCoords, sysId, GALAXY);
 
       // Compare lower 44 bits (planet bits P are not preserved)
       expect(reconstructed & 0xFFFFFFFFFFn).toBe(originalPortal & 0xFFFFFFFFFFn);
     });
 
     it("all reverse search results have valid portals", () => {
-      const portal = BigInt("0x102DFC63C321");
-      const expectedName = systemName(portal, 9);
-
-      const rawX = Number(portal & 0xFFFn);
-      const rawY = Number((portal >> 24n) & 0xFFn);
-      const rawZ = Number((portal >> 12n) & 0xFFFn);
-      const galCoords = ((rawY << 24) | (rawZ << 12) | rawX) >>> 0;
+      const expectedName = EXPECTED_SYSTEM_NAME;
 
       const results = findSystemSeeds(expectedName, {
-        galaxy: 9,
+        galaxy: GALAXY,
         maxResults: 10,
-        galCoordsStart: galCoords,
-        galCoordsEnd: galCoords,
+        galCoordsStart: GAL_COORDS,
+        galCoordsEnd: GAL_COORDS,
       });
 
       for (const r of results) {
@@ -389,7 +383,7 @@ describe("Portal Validation", () => {
         const resultPortal = reconstructPortal(
           (r.seed[0]! | (r.seed[1]! << 8) | (r.seed[2]! << 16) | (r.seed[3]! << 24)) >>> 0,
           r.seed[5]! | (r.seed[6]! << 8),
-          9,
+          GALAXY,
         );
         expect(isValidPortal(resultPortal)).toBe(true);
       }
@@ -406,7 +400,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
     // Build a seed with sysId=599 and a known galCoords
     const galCoords = 0xFC63C321;
     const sysId = 599;
-    const systemIndex = (sysId << 8) | (9 & 0xFF); // galaxy=9
+    const systemIndex = (sysId << 8) | (GALAXY & 0xFF);
     const seed = [
       galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
       systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
@@ -415,7 +409,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
     const name = formatSystemName(seed);
 
     const results = findSystemSeeds(name, {
-      galaxy: 9,
+      galaxy: GALAXY,
       maxResults: 50,
       galCoordsStart: galCoords,
       galCoordsEnd: galCoords,
@@ -428,7 +422,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
   it("findSystemSeeds respects SYS filter: SYS=600 is included", () => {
     const galCoords = 0xFC63C321;
     const sysId = 600;
-    const systemIndex = (sysId << 8) | (9 & 0xFF);
+    const systemIndex = (sysId << 8) | (GALAXY & 0xFF);
     const seed = [
       galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
       systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
@@ -437,7 +431,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
     const name = formatSystemName(seed);
 
     const results = findSystemSeeds(name, {
-      galaxy: 9,
+      galaxy: GALAXY,
       maxResults: 50,
       galCoordsStart: galCoords,
       galCoordsEnd: galCoords,
@@ -450,7 +444,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
   it("findSystemSeeds respects SYS filter: SYS=601 is excluded", () => {
     const galCoords = 0xFC63C321;
     const sysId = 601;
-    const systemIndex = (sysId << 8) | (9 & 0xFF);
+    const systemIndex = (sysId << 8) | (GALAXY & 0xFF);
     const seed = [
       galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
       systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
@@ -459,7 +453,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
     const name = formatSystemName(seed);
 
     const results = findSystemSeeds(name, {
-      galaxy: 9,
+      galaxy: GALAXY,
       maxResults: 50,
       galCoordsStart: galCoords,
       galCoordsEnd: galCoords,
@@ -477,7 +471,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
   it("findRegionSeeds respects SYS filter: SYS=601 is excluded", () => {
     const galCoords = 0xFC63C321;
     const sysId = 601;
-    const systemIndex = (sysId << 8) | (9 & 0xFF);
+    const systemIndex = (sysId << 8) | (GALAXY & 0xFF);
     const seed = [
       galCoords & 0xff, (galCoords >> 8) & 0xff, (galCoords >> 16) & 0xff, (galCoords >> 24) & 0xff,
       systemIndex & 0xff, (systemIndex >> 8) & 0xff, (systemIndex >> 16) & 0xff, (systemIndex >> 24) & 0xff,
@@ -486,7 +480,7 @@ describe("Reverse Search - SYS Heuristic Filter", () => {
     const name = formatRegionName(seed);
 
     const results = findRegionSeeds(name, {
-      galaxy: 9,
+      galaxy: GALAXY,
       maxResults: 50,
       galCoordsStart: galCoords,
       galCoordsEnd: galCoords,
