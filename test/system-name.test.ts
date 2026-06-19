@@ -1,34 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { formatSystemName } from "../src/system-name.js";
+import { formatSystemName, systemName, portalToSeed } from "../src/system-name.js";
+import {
+  regionName,
+  planetName,
+  planetSeed,
+  planetSeeds,
+  systemAttributes,
+} from "../src/index.js";
 import { readFileSync } from "fs";
 import { join } from "path";
-
-/**
- * Convert a portal code + galaxy to the 12-byte seed format
- * expected by formatSystemName.
- *
- * Python: galacticCoords = portal & 0xFFFFFFFF
- *         systemIndex    = ((portal & 0x0FFF00000000) >> 24) | galaxy
- *
- * TS:     galacticCoords = shl(seed, 4) = first 4 bytes
- *         systemIndex    = shr(seed, 4) = last 8 bytes
- */
-function portalToSeed(portal: bigint, galaxy: number): number[] {
-  const galacticCoords = portal & 0xFFFFFFFFn;
-  const systemIndex =
-    ((portal & 0x0fff00000000n) >> 24n) | BigInt(galaxy);
-
-  const seed = new Array<number>(12).fill(0);
-
-  for (let i = 0; i < 4; i++) {
-    seed[i] = Number((galacticCoords >> BigInt(i * 8)) & 0xFFn);
-  }
-  for (let i = 0; i < 4; i++) {
-    seed[4 + i] = Number((systemIndex >> BigInt(i * 8)) & 0xFFn);
-  }
-
-  return seed;
-}
 
 describe("formatSystemName", () => {
   it("returns a non-empty string", () => {
@@ -94,5 +74,30 @@ describe("formatSystemName", () => {
       const seed = portalToSeed(portal, 0);
       expect(formatSystemName(seed)).toBe(expectedName);
     }
+  });
+
+  it("matches nms_namegen for full portal code verification", () => {
+    const portal = 0x102dfc63c321n;
+    const galaxy = 9;
+
+    expect(systemName(portal, galaxy)).toBe("Desnoz-Gasu");
+    expect(regionName(portal, galaxy)).toBe("Ejblifirtc");
+    expect(planetSeed(portal, galaxy)).toBe(0x73d7e3db769c634bn);
+
+    const sa = systemAttributes(portal, galaxy);
+    expect(sa.planet_count).toBe(4);
+    expect(sa.prime_planet_count).toBe(1);
+    expect(sa.safe_start_planet).toBe(2);
+
+    const ps = planetSeeds(portal, galaxy);
+    expect(ps.planet_count).toBe(5);
+    expect(ps.moon_count).toBe(0);
+    expect(ps.planet_seeds.length).toBe(5);
+
+    expect(planetName(ps.planet_seeds[0]!)).toBe("Toftusa E10");
+    expect(planetName(ps.planet_seeds[1]!)).toBe("Asklepus P1");
+    expect(planetName(ps.planet_seeds[2]!)).toBe("Tival Gamma");
+    expect(planetName(ps.planet_seeds[3]!)).toBe("Roxandrac Zush");
+    expect(planetName(ps.planet_seeds[4]!)).toBe("Ranianus D19");
   });
 });
