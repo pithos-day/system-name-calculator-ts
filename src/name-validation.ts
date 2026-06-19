@@ -234,8 +234,8 @@ function validateRegionBaseName(name: string): ValidationResult {
     return { valid: false, reason: "Base name must start with uppercase" };
   }
 
-  // Rest must be lowercase letters
-  if (!/^[A-Z][a-z]+$/.test(name)) {
+  // Rest must be lowercase letters, allowing spaces between words
+  if (!/^[A-Z][a-z]+( [A-Z][a-z]+)*$/.test(name)) {
     return { valid: false, reason: "Invalid characters in base name" };
   }
 
