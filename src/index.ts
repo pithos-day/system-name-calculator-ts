@@ -45,6 +45,8 @@ export {
   findRegionSeeds,
   findPlanetNames,
   reconstructPortal,
+  portalToGalacticCoords,
+  isValidPortal,
   type ReverseSearchOptions,
 } from "./reverse-search.js";
 

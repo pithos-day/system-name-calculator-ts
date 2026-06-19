@@ -80,6 +80,9 @@ export function findSystemSeeds(
       if (generated.toLowerCase() === name.toLowerCase()) {
         const portal = reconstructPortal(galCoords, sysId, galaxy);
 
+        // Skip invalid portal codes (out of range or galactic center)
+        if (!isValidPortal(portal)) continue;
+
         result.push({
           seed,
           signalBoosterCoords: formatRegionBoosterCoords(portal),
@@ -133,6 +136,9 @@ export function findRegionSeeds(
       const generated = formatRegionName(seed);
       if (generated.toLowerCase() === name.toLowerCase()) {
         const portal = reconstructPortal(galCoords, sysId, galaxy);
+
+        // Skip invalid portal codes (out of range or galactic center)
+        if (!isValidPortal(portal)) continue;
 
         result.push({
           seed,
@@ -231,4 +237,60 @@ function bytesToU64(bytes: number[]): bigint {
     val = (val << 8n) | BigInt(bytes[i]! & 0xff);
   }
   return val;
+}
+
+// ─── Portal Validation ────────────────────────────────────────────────
+
+/**
+ * Extract signed galactic coordinates from a portal code.
+ *
+ * Portal format: 0xPSSSYYZZZXXX
+ *   rawX = XXX (12 bits, 0-4095)
+ *   rawY = YY  (8 bits, 0-255, signed)
+ *   rawZ = ZZZ (12 bits, 0-4095)
+ *
+ * Signed coordinates:
+ *   X = signExtend(rawX, 12) → range -2048 to 2047
+ *   Y = signExtend(rawY, 8)  → range -128 to 127
+ *   Z = signExtend(rawZ, 12) → range -2048 to 2047
+ */
+export function portalToGalacticCoords(portal: bigint): { x: number; y: number; z: number } {
+  const rawX = Number(portal & 0xFFFn);
+  const rawY = Number((portal >> 24n) & 0xFFn);
+  const rawZ = Number((portal >> 12n) & 0xFFFn);
+
+  // Sign-extend 12-bit values
+  const x = rawX >= 0x800 ? rawX - 0x1000 : rawX;
+  // Sign-extend 8-bit value
+  const y = rawY >= 0x80 ? rawY - 0x100 : rawY;
+  // Sign-extend 12-bit values
+  const z = rawZ >= 0x800 ? rawZ - 0x1000 : rawZ;
+
+  return { x, y, z };
+}
+
+/**
+ * Check if a portal code represents a valid, reachable location.
+ *
+ * Valid coordinate ranges:
+ *   Y: -126 to 126
+ *   X: -2047 to 2046
+ *   Z: -2047 to 2046
+ *
+ * Galactic center exclusion zone:
+ *   Y² + Z² + X² < 64 → unreachable
+ */
+export function isValidPortal(portal: bigint): boolean {
+  const { x, y, z } = portalToGalacticCoords(portal);
+
+  // Check coordinate ranges
+  if (y < -126 || y > 126) return false;
+  if (x < -2047 || x > 2046) return false;
+  if (z < -2047 || z > 2046) return false;
+
+  // Check galactic center exclusion zone (sphere with radius 8)
+  const distSq = y * y + z * z + x * x;
+  if (distSq < 64) return false;
+
+  return true;
 }
