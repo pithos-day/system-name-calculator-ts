@@ -43,6 +43,8 @@ export {
 export {
   findSystemSeeds,
   findRegionSeeds,
+  findPlanetNames,
+  reconstructPortal,
   type ReverseSearchOptions,
 } from "./reverse-search.js";
 

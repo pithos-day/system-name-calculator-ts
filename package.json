@@ -19,7 +19,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build",
-    "portal": "tsx examples/portal-lookup.ts"
+    "portal": "tsx examples/portal-lookup.ts",
+    "reverse": "tsx examples/reverse-search.ts"
   },
   "keywords": [
     "no-mans-sky",
