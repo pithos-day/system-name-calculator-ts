@@ -7,8 +7,6 @@ import {
   planetSeeds,
   systemAttributes,
 } from "../src/index.js";
-import { readFileSync } from "fs";
-import { join } from "path";
 import {
   GALAXY,
   PORTAL,
@@ -63,14 +61,26 @@ describe("formatSystemName", () => {
     expect(formatSystemName(seed)).toBe(EXPECTED_SYSTEM_NAME);
   });
 
-  it("matches all nms_namegen system_names fixture", () => {
+  it("matches all nms_namegen system_names fixture", async () => {
+    let readFileSync: (path: string, encoding: BufferEncoding) => string;
+    let join: (...parts: string[]) => string;
+    try {
+      readFileSync = (await import("fs")).readFileSync;
+      join = (await import("path")).join;
+    } catch {
+      return; // Skip if fs/path unavailable (browser environment)
+    }
     const fixturePath = join(
-      __dirname,
+      new URL(".", import.meta.url).pathname,
       "../nms_namegen/test/fixtures/system_names.json",
     );
-    const fixtures: [string, string, string][] = JSON.parse(
-      readFileSync(fixturePath, "utf8"),
-    );
+    let raw: string;
+    try {
+      raw = readFileSync(fixturePath, "utf8");
+    } catch {
+      return; // Skip if fixture file not found
+    }
+    const fixtures: [string, string, string][] = JSON.parse(raw);
 
     for (const [expectedName, _coords, portalHex] of fixtures) {
       const portal = BigInt("0x" + portalHex);

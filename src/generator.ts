@@ -25,14 +25,13 @@ import { TINY_DOUBLE, VOWELS } from "./constants.js";
 
 type LetterMapWeight = { Item1: string; Item2: number };
 
-import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
+import _letterMapData from "./data/letter-map.js";
 
 let _letterMapSync: Record<number, Record<string, unknown>> | null = null;
 
 function getLetterMapSync(): Record<number, Record<string, unknown>> {
   if (_letterMapSync === null) {
-    const data = require("./data/letter-map.json") as Record<string, Record<string, unknown>>;
+    const data = _letterMapData as Record<string, Record<string, unknown>>;
     _letterMapSync = {};
     for (const key of Object.keys(data)) {
       _letterMapSync[Number(key)] = data[key]!;

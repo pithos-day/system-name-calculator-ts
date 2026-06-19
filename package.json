@@ -15,7 +15,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && cp src/data/letter-map.json dist/data/",
+    "build": "tsc",
     "prepare": "pnpm run build",
     "test": "vitest run",
     "test:watch": "vitest",
