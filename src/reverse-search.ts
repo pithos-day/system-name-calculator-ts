@@ -342,6 +342,59 @@ export function portalToGalacticCoords(portal: bigint): string {
  * Galactic center exclusion zone:
  *   Y² + Z² + X² < 64 → unreachable
  */
+/**
+ * Convert a galactic coordinates string to a portal code string.
+ *
+ * Input format: "XXXX:YYYY:ZZZZ:SSSS"
+ *   XXXX = X coordinate (unsigned hex, offset +2047)
+ *   YYYY = Y coordinate (unsigned hex, offset +127, signed)
+ *   ZZZZ = Z coordinate (unsigned hex, offset +2047)
+ *   SSSS = system id (unsigned hex)
+ *
+ * Output: Portal code as uppercase hex string (no 0x prefix).
+ *   Format: "PSSSYYZZZXXX" (12 hex digits, P=0)
+ */
+export function galacticCoordsToPortal(coords: string): string {
+  const parts = coords.split(":");
+  if (parts.length !== 4) {
+    throw new Error(`Invalid galactic coords format: "${coords}" (expected "XXXX:YYYY:ZZZZ:SSSS")`);
+  }
+
+  const xRaw = parseInt(parts[0]!, 16);
+  const yRaw = parseInt(parts[1]!, 16);
+  const zRaw = parseInt(parts[2]!, 16);
+  const sysId = parseInt(parts[3]!, 16);
+
+  if (isNaN(xRaw) || isNaN(yRaw) || isNaN(zRaw) || isNaN(sysId)) {
+    throw new Error(`Invalid hex values in coords: "${coords}"`);
+  }
+
+  // Reverse the offsets: X/Z -2047, Y -127 (signed)
+  const rawX = (xRaw - COORD_OFFSET_XZ) & 0xFFF;
+  const ySigned = yRaw >= 0x8000 ? yRaw - 0x10000 : yRaw;
+  const rawY = (ySigned - COORD_OFFSET_Y) & 0xFF;
+  const rawZ = (zRaw - COORD_OFFSET_XZ) & 0xFFF;
+
+  // Build portal: 0x0SSSYYZZZXXX
+  const portal = BigInt(sysId & 0xFFF) << 32n |
+    BigInt(rawY) << 24n |
+    BigInt(rawZ) << 12n |
+    BigInt(rawX);
+
+  return portal.toString(16).toUpperCase().padStart(12, "0");
+}
+
+/**
+ * Check if a portal code represents a valid, reachable location.
+ *
+ * Computes signed galactic coordinates directly from raw portal bits:
+ *   Y: -126 to 126
+ *   X: -2047 to 2046
+ *   Z: -2047 to 2046
+ *
+ * Galactic center exclusion zone:
+ *   Y² + Z² + X² < 64 → unreachable
+ */
 export function isValidPortal(portal: bigint): boolean {
   const rawX = Number(portal & 0xFFFn);
   const rawY = Number((portal >> 24n) & 0xFFn);

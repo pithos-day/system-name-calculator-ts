@@ -8,6 +8,7 @@ import {
   findRegionSeeds,
   reconstructPortal,
   portalToGalacticCoords,
+  galacticCoordsToPortal,
   isValidPortal,
   MAX_REVERSE_SEARCH_SYS,
 } from "../src/index.js";
@@ -312,6 +313,58 @@ describe("Portal Validation", () => {
     it("(0,0,8) is valid (dist²=64 >= 64)", () => {
       const portal = buildPortal(0, 0, 8, 0);
       expect(isValidPortal(portal)).toBe(true);
+    });
+  });
+
+  describe("galacticCoordsToPortal", () => {
+    it("converts coords string to portal hex string", () => {
+      const portal = galacticCoordsToPortal("0B20:007B:0E3B:002D");
+      expect(typeof portal).toBe("string");
+      expect(portal).toMatch(/^[0-9A-F]{12}$/);
+    });
+
+    it("roundtrips with portalToGalacticCoords", () => {
+      const original = buildPortal(0x321, 0xFC, 0x63C, 0x02D);
+      const coords = portalToGalacticCoords(original);
+      const reconstructed = galacticCoordsToPortal(coords);
+
+      // Should match lower 44 bits (planet bits P=0 in reconstructed)
+      const origMasked = (original & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
+      expect(reconstructed).toBe(origMasked);
+    });
+
+    it("roundtrips with known fixture portal", () => {
+      const coords = portalToGalacticCoords(PORTAL);
+      const reconstructed = galacticCoordsToPortal(coords);
+      const expected = (PORTAL & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
+      expect(reconstructed).toBe(expected);
+    });
+
+    it("handles negative Y coordinates", () => {
+      // Y=-1 → hex "FFFF", rawY should be 0x80
+      const portal = buildPortal(0, 0x80, 0, 0);
+      const coords = portalToGalacticCoords(portal);
+      const reconstructed = galacticCoordsToPortal(coords);
+      expect(reconstructed).toBe("000080000000");
+    });
+
+    it("handles max boundary values", () => {
+      // X=6142 (rawX=0xFFF), Y=253 (rawY=0x7D), Z=6142 (rawZ=0xFFF), S=4095
+      const portal = buildPortal(0xFFF, 0x7D, 0xFFF, 0xFFF);
+      const coords = portalToGalacticCoords(portal);
+      const reconstructed = galacticCoordsToPortal(coords);
+      const expected = portal.toString(16).toUpperCase().padStart(12, "0");
+      expect(reconstructed).toBe(expected);
+    });
+
+    it("throws on invalid format", () => {
+      expect(() => galacticCoordsToPortal("invalid")).toThrow("Invalid galactic coords format");
+      expect(() => galacticCoordsToPortal("AAAA:BBBB:CCCC")).toThrow("Invalid galactic coords format");
+      expect(() => galacticCoordsToPortal("AAAA:BBBB:CCCC:DDDD:EEEE")).toThrow("Invalid galactic coords format");
+    });
+
+    it("throws on invalid hex values", () => {
+      expect(() => galacticCoordsToPortal("ZZZZ:0000:0000:0000")).toThrow("Invalid hex values");
     });
   });
 

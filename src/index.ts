@@ -46,6 +46,7 @@ export {
   findPlanetNames,
   reconstructPortal,
   portalToGalacticCoords,
+  galacticCoordsToPortal,
   isValidPortal,
   validateName,
   MAX_REVERSE_SEARCH_SYS,
