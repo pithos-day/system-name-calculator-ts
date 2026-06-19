@@ -25,7 +25,7 @@ export {
 // ─── Forward Transformation (Coordinates → Name) ─────────────────────
 
 export { formatSystemName } from "./system-name.js";
-export { formatRegionName, PROC_ADORNMENTS } from "./region-name.js";
+export { regionName, formatRegionName, PROC_ADORNMENTS } from "./region-name.js";
 
 // ─── Name Generation Engine ───────────────────────────────────────────
 

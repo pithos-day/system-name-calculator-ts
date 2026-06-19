@@ -1,7 +1,36 @@
 import { describe, it, expect } from "vitest";
-import { formatRegionName, PROC_ADORNMENTS } from "../src/region-name.js";
+import {
+  regionName,
+  formatRegionName,
+  PROC_ADORNMENTS,
+} from "../src/region-name.js";
+import { readFileSync } from "fs";
+import { join } from "path";
 
-describe("formatRegionName", () => {
+describe("regionName", () => {
+  it("matches Python test case: Jeffriy Instability", () => {
+    expect(regionName(0x01fbff285671n, 9)).toBe("Jeffriy Instability");
+  });
+
+  it("matches all nms_namegen region_names fixture", () => {
+    const fixturePath = join(
+      __dirname,
+      "../nms_namegen/test/fixtures/region_names.json",
+    );
+    const fixtures: Record<string, string> = JSON.parse(
+      readFileSync(fixturePath, "utf8"),
+    );
+
+    for (const [grf, expectedName] of Object.entries(fixtures)) {
+      const grfBigInt = BigInt(grf);
+      const portal_code = grfBigInt & 0xFFFFFFFFn;
+      const galaxy = Number(grfBigInt >> 32n);
+      expect(regionName(portal_code, galaxy)).toBe(expectedName);
+    }
+  });
+});
+
+describe("formatRegionName (legacy)", () => {
   it("returns a non-empty string", () => {
     const seed = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const result = formatRegionName(seed);
@@ -29,28 +58,6 @@ describe("formatRegionName", () => {
     const b = formatRegionName(seed2);
     expect(a).not.toBe(b);
   });
-
-  it("may include adornment (proc-adornment)", () => {
-    // Test with many seeds to check that adornments appear
-    let adornedCount = 0;
-    for (let i = 0; i < 100; i++) {
-      const seed = Array.from({ length: 10 }, (_, j) => (i * 11 + j * 7) % 256);
-      const result = formatRegionName(seed);
-      if (PROC_ADORNMENTS.some((a) => a.replace("%NAME%", "") !== result)) {
-        // Check if the result contains any adornment pattern
-        for (const adorn of PROC_ADORNMENTS) {
-          const base = adorn.replace("%NAME%", "").trim();
-          if (result.includes(base)) {
-            adornedCount++;
-            break;
-          }
-        }
-      }
-    }
-    // Some seeds should produce adorned names
-    // (This is probabilistic, so we just check the function runs)
-    expect(adornedCount).toBeGreaterThanOrEqual(0);
-  });
 });
 
 describe("PROC_ADORNMENTS", () => {
@@ -58,9 +65,9 @@ describe("PROC_ADORNMENTS", () => {
     expect(PROC_ADORNMENTS.length).toBe(20);
   });
 
-  it("all contain %NAME% placeholder", () => {
+  it("all contain {} placeholder", () => {
     for (const adorn of PROC_ADORNMENTS) {
-      expect(adorn).toContain("%NAME%");
+      expect(adorn).toContain("{}");
     }
   });
 });
