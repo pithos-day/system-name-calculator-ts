@@ -18,7 +18,8 @@
     "build": "tsc && cp src/data/letter-map.json dist/data/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "portal": "tsx examples/portal-lookup.ts"
   },
   "keywords": [
     "no-mans-sky",
