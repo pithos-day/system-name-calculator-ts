@@ -102,42 +102,42 @@ function doHash(
   return o;
 }
 
-function indexPrimedPRNG(lUA: bigint): bigint {
-  let o = [0n, 0n, 0n, 0n];
-  let oCounter = 0;
+function indexPrimedPRNG(universalAddress: bigint): bigint {
+  let hashOutput = [0n, 0n, 0n, 0n];
+  let outputCounter = 0;
 
-  const seed = lUA & 0xFFFFFFFFFFn;
-  const system_id = Number((lUA >> 0x20n) >> 8n) & 0xFFF;
+  const seed = universalAddress & 0xFFFFFFFFFFn;
+  const systemId = Number((universalAddress >> 0x20n) >> 8n) & 0xFFF;
   const key = (seed ^ 0x1BD11BDAA9FC1A22n) & MASK64;
 
   let a = seed;
   let b = (ror64(seed, 7) ^ seed) & MASK64;
   let c = (b + a) & MASK64;
   let d = (seed + seed) & MASK64;
-  o = doHash(a, b, c, d, key, seed);
+  hashOutput = doHash(a, b, c, d, key, seed);
 
-  if (system_id >= 9) {
-    const system_index = system_id - 1;
-    const sys_high = (system_index - 8) >> 3;
-    oCounter = (system_index - 8) & 7;
+  if (systemId >= 9) {
+    const systemIndex = systemId - 1;
+    const systemIndexHigh = (systemIndex - 8) >> 3;
+    outputCounter = (systemIndex - 8) & 7;
 
-    a = BigInt(sys_high + 1) + seed;
+    a = BigInt(systemIndexHigh + 1) + seed;
     b = (ror64(a, 7) ^ a) & MASK64;
     c = (b + a) & MASK64;
     d = (a + a) & MASK64;
-    o = doHash(a, b, c, d, key, seed);
+    hashOutput = doHash(a, b, c, d, key, seed);
   } else {
-    oCounter = system_id - 1;
+    outputCounter = systemId - 1;
   }
 
-  const index = oCounter >> 1;
-  oCounter += 1;
+  const index = outputCounter >> 1;
+  outputCounter += 1;
 
   let out: bigint;
-  if (!(1 & oCounter)) {
-    out = (o[index]! >> 0x20n) & MASK64;
+  if (!(1 & outputCounter)) {
+    out = (hashOutput[index]! >> 0x20n) & MASK64;
   } else {
-    out = o[index]! & MASK64;
+    out = hashOutput[index]! & MASK64;
   }
 
   return out;
@@ -153,7 +153,7 @@ interface VoxelAttributes {
   guide_star_renegade_count: number;
 }
 
-function voxelAttributes(portal_code: bigint): VoxelAttributes {
+function voxelAttributes(portalCode: bigint): VoxelAttributes {
   const attrs: VoxelAttributes = {
     guide_star_count: 0x78,
     black_hole_count: 1,
@@ -162,9 +162,9 @@ function voxelAttributes(portal_code: bigint): VoxelAttributes {
     guide_star_renegade_count: 0,
   };
 
-  const x = Number(portal_code & 0xFFFn);
-  const y = Number((portal_code & 0xFF000000n) >> 24n);
-  const z = Number((portal_code & 0xFFF000n) >> 12n);
+  const x = Number(portalCode & 0xFFFn);
+  const y = Number((portalCode & 0xFF000000n) >> 24n);
+  const z = Number((portalCode & 0xFFF000n) >> 12n);
 
   const distance = Math.sqrt(x * x + y * y + z * z);
 
@@ -195,10 +195,10 @@ interface SystemAttributes {
   safe_start_planet: number;
 }
 
-export function systemAttributes(portal_code: bigint, galaxy: number): SystemAttributes {
-  const pc = portal_code & 0xFFFFFFFFFFFn;
-  const system_id = Number((pc & 0xFFF00000000n) >> 32n);
-  const universalAddress = ((BigInt(system_id) << 8n) | BigInt(galaxy & 0xFF)) << 32n |
+export function systemAttributes(portalCode: bigint, galaxy: number): SystemAttributes {
+  const pc = portalCode & 0xFFFFFFFFFFFn;
+  const systemId = Number((pc & 0xFFF00000000n) >> 32n);
+  const universalAddress = ((BigInt(systemId) << 8n) | BigInt(galaxy & 0xFF)) << 32n |
     (pc & 0xFFFFFFFFn);
 
   const va = voxelAttributes(pc);
@@ -220,7 +220,7 @@ export function systemAttributes(portal_code: bigint, galaxy: number): SystemAtt
   let primePlanetCount = 2;
   let planetCount = 1;
 
-  if (system_id < va.guide_star_count) {
+  if (systemId < va.guide_star_count) {
     planetCount = Number(((seed & MASK32) * 4n) >> 32n) + 3;
     safeStart = prngRandom(rngState, planetCount) + 1;
   } else {
@@ -243,11 +243,11 @@ export function systemAttributes(portal_code: bigint, galaxy: number): SystemAtt
   prngUpdateSeed(rngState);
   prngUpdateSeed(rngState);
 
-  if (system_id < va.guide_star_renegade_count) {
+  if (systemId < va.guide_star_renegade_count) {
     starType = prngRandom(rngState, 3) + 1;
   }
 
-  if (system_id > 0x3E9 && system_id < 0x429) {
+  if (systemId > 0x3E9 && systemId < 0x429) {
     starType = 4;
   }
 
@@ -261,17 +261,17 @@ export function systemAttributes(portal_code: bigint, galaxy: number): SystemAtt
     primePlanetCount = 1;
   }
 
-  let unknown_attribute2 = 0;
+  let anomalyFlag = 0;
   if (starType === 4) {
     planetCount = 0;
     if (prngRandom(rngState, 100) > 0xF) {
       if (prngRandom(rngState, 100) < 0x42) {
-        unknown_attribute2 = 1;
+        anomalyFlag = 1;
       }
     }
   }
 
-  if (unknown_attribute2) {
+  if (anomalyFlag) {
     planetCount = 0;
     starType = 4;
     primePlanetCount = 6;
@@ -292,14 +292,14 @@ interface PlanetSeedsResult {
   moon_count: number;
 }
 
-export function planetSeeds(portal_code: bigint, galaxy: number): PlanetSeedsResult {
-  const sa = systemAttributes(portal_code, galaxy);
+export function planetSeeds(portalCode: bigint, galaxy: number): PlanetSeedsResult {
+  const sa = systemAttributes(portalCode, galaxy);
 
   const planetSeedsList: bigint[] = [];
   let moonCount = 0;
 
-  const galacticCoords = portal_code & 0xFFFFFFFFn;
-  const systemIndex = ((portal_code & 0x0FFF00000000n) >> 24n) | BigInt(galaxy);
+  const galacticCoords = portalCode & 0xFFFFFFFFn;
+  const systemIndex = ((portalCode & 0x0FFF00000000n) >> 24n) | BigInt(galaxy);
 
   // Murmur-like hash
   let register = (systemIndex << 0x20n) | galacticCoords;
@@ -310,16 +310,16 @@ export function planetSeeds(portal_code: bigint, galaxy: number): PlanetSeedsRes
   register = (register >> 33n) ^ register;
 
   // Derive seed
-  let seedH =
+  let seedHigh =
     ((((register & 0xFFFF0000n) >> 16n) | ((register & 0x0000FFFFn) << 16n)) ^
       (register & 0xFFFFFFFFn) ^
       (register >> 32n)) &
     MASK64;
 
-  let seedL = register & 0xFFFFFFFFn;
-  if (seedH === 0n) seedH = 1n;
+  let seedLow = register & 0xFFFFFFFFn;
+  if (seedHigh === 0n) seedHigh = 1n;
 
-  const seed = (seedH << 32n) | seedL;
+  const seed = (seedHigh << 32n) | seedLow;
   const rngState: PRNGState = { seed };
 
   let i = 0;
@@ -361,8 +361,8 @@ export function planetSeeds(portal_code: bigint, galaxy: number): PlanetSeedsRes
     reg &= MASK64;
     reg = ((reg >> 33n) ^ reg) * CONST_B;
     reg &= MASK64;
-    const pSeed = (reg >> 33n) ^ reg;
-    planetSeedsList.push(pSeed);
+    const planetSeedHash = (reg >> 33n) ^ reg;
+    planetSeedsList.push(planetSeedHash);
     i++;
   }
 
@@ -378,8 +378,8 @@ export function planetSeeds(portal_code: bigint, galaxy: number): PlanetSeedsRes
     reg &= MASK64;
     reg = ((reg >> 33n) ^ reg) * CONST_B;
     reg &= MASK64;
-    const pSeed = (reg >> 33n) ^ reg;
-    planetSeedsList.push(pSeed);
+    const planetSeedHash = (reg >> 33n) ^ reg;
+    planetSeedsList.push(planetSeedHash);
 
     const size = prngRandom(rngState, 3);
     if (size !== 0) {
@@ -399,9 +399,9 @@ export function planetSeeds(portal_code: bigint, galaxy: number): PlanetSeedsRes
 
 // ─── planetSeed (matching nms_namegen planet.py) ─────────────────────
 
-export function planetSeed(portal_code: bigint, galaxy: number): bigint {
-  const planetId = Number((portal_code & 0xF00000000000n) >> 44n);
-  return planetSeeds(portal_code, galaxy).planet_seeds[planetId - 1]!;
+export function planetSeed(portalCode: bigint, galaxy: number): bigint {
+  const planetId = Number((portalCode & 0xF00000000000n) >> 44n);
+  return planetSeeds(portalCode, galaxy).planet_seeds[planetId - 1]!;
 }
 
 // ─── Planet Name Helpers ─────────────────────────────────────────────
@@ -424,17 +424,17 @@ function formatShortcode(alpha: number, num: number): string {
  * @returns Generated planet name
  */
 export function planetName(planetSeedOrCode: bigint, galaxy?: number): string {
-  let planetSeedVal: bigint;
+  let resolvedSeed: bigint;
 
   if (galaxy !== undefined) {
-    planetSeedVal = planetSeed(planetSeedOrCode, galaxy);
+    resolvedSeed = planetSeed(planetSeedOrCode, galaxy);
   } else {
-    planetSeedVal = planetSeedOrCode;
+    resolvedSeed = planetSeedOrCode;
   }
 
   // Derive PRNG seed from planet seed (matching planet.py lines 56-67)
-  const lowword = planetSeedVal & MASK32;
-  const highword = planetSeedVal >> 32n;
+  const lowword = resolvedSeed & MASK32;
+  const highword = resolvedSeed >> 32n;
 
   let rol16 = ((lowword & 0xFFFFn) << 16n) | ((lowword & 0xFFFF0000n) >> 16n);
   rol16 = (rol16 ^ lowword ^ highword) & MASK32;
