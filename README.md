@@ -13,7 +13,7 @@ C# 版 [SystemNameCalculator](https://github.com/andraemon/SystemNameCalculator)
 | System Name 生成 | システム名の生成（ハイフン付き・ローマ数字サフィックス対応） |
 | Region Name 生成 | リージョン名の生成（装飾語付き対応） |
 | Planet Name 生成 | プラネット名の生成（11 スタイル対応） |
-| Reverse Search | 名前から座標を検索 |
+| Reverse Search | 名前から座標を検索（非推奨・実験的） |
 
 ## Usage
 
@@ -58,12 +58,32 @@ for (const seed of ps.planet_seeds) {
 // "Nock O23", "Hasenden VII", "Cogge", "Vassis Major", "Ibata 17/T1", "Sissica"
 ```
 
-### Reverse Search
+### Reverse Search（実験的・非推奨）
+
+> **注意:** Reverse Search は実験的機能です。生成アルゴリズムの完全な逆変換ではなく、brute-force 探索による推定結果を返します。**返される Portal Code がゲーム上で有効・到達可能な座標とは限らない**ため、本番用途での使用は推奨しません。
+
+| 項目 | 内容 |
+|------|------|
+| 仕様 | 名前から候補座標を探索する機能 |
+| 制限 | Portal Code の有効性・到達可能性を保証しません |
+| 将来性 | アルゴリズム変更の影響を受ける可能性があります |
+
+**推奨用途:**
+- 調査・研究目的
+- デバッグ・テスト
+- 候補の探索
+
+**非推奨用途:**
+- 実在する惑星の確定
+- Portal Code の検証
+- ナビゲーション用途
 
 ```typescript
 import { findSystemSeeds, formatSystemName, reconstructPortal } from "system-name-calculator-ts";
 
-// 名前から座標を検索
+// Warning: Reverse Search results are not guaranteed to be valid Portal Codes.
+// Validate results before use. This feature is experimental and may be removed
+// or changed in future versions.
 const results = findSystemSeeds("Loytkara", {
   galaxy: 0,
   maxResults: 5,
@@ -89,6 +109,7 @@ for (const r of results) {
 npx tsx examples/portal-lookup.ts 202101D40677 0
 
 # Reverse Search
+# WARNING: Reverse Search is experimental. Results may include invalid or unreachable Portal Codes.
 npx tsx examples/reverse-search.ts "Loytkara" 0 --start 00000000 --end FFFFFFFF
 
 # JSON 出力
@@ -99,7 +120,7 @@ npx tsx examples/portal-lookup.ts 202101D40677 0 --json
 
 - Python 版 [nms_namegen](https://github.com/stuart/nms_namegen) の挙動を参考にし、生成アルゴリズムの互換性を目標としています
 - C# 版 [SystemNameCalculator](https://github.com/andraemon/SystemNameCalculator) からの移植過程で見つかった仕様差異を修正しています（例: ハイフン付きシステム名、ローマ数字サフィックス、Murmur ハッシュの符号拡張）
-- Reverse Search など一部機能は独自実装です（nms_namegen に該当機能なし）
+- Reverse Search など一部機能は独自実装です（nms_namegen に該当機能なし）。**実験的機能であり、結果の正確性・有効性は保証されません。**
 - 157 テストすべてパス（Python 検証ベクトルとの一致確認済み）
 
 ## Credits / References

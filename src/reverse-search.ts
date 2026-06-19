@@ -6,6 +6,12 @@
  *
  * NOTE: Exhaustive search iterates up to 2^32 seeds.
  * Use `maxResults` and `onProgress` to control execution time.
+ *
+ * @experimental
+ * Reverse Search is an experimental feature and may return invalid or unreachable
+ * Portal Codes. It is not a true inverse of the generation algorithm — it performs
+ * brute-force iteration and heuristic filtering. Results should not be relied upon
+ * for navigation, planet verification, or any production use.
  */
 
 import type { SeedRange, WeightData, SearchResult } from "./types.js";
@@ -61,6 +67,11 @@ export interface ReverseSearchOptions {
  *
  * Searches by iterating galacticCoords (lower 32 bits of portal code)
  * and verifying that formatSystemName produces the target name.
+ *
+ * @deprecated
+ * Reverse Search is experimental and may return invalid or unreachable Portal Codes.
+ * Use only for exploration, debugging, or research purposes. Do not rely on results
+ * for navigation, planet verification, or production use.
  *
  * @param name - System name (e.g. "Desnoz-Gasu", "Gamumu XIX")
  * @param options - Search options
@@ -131,6 +142,11 @@ export function findSystemSeeds(
 /**
  * Find portal codes that produce the given region name in the given galaxy.
  *
+ * @deprecated
+ * Reverse Search is experimental and may return invalid or unreachable Portal Codes.
+ * Use only for exploration, debugging, or research purposes. Do not rely on results
+ * for navigation, planet verification, or production use.
+ *
  * @param name - Region name (e.g. "Ejblifirtc", "Sea of Aosh")
  * @param options - Search options
  * @returns Array of SearchResult with seed, coordinates, and portal info
@@ -195,6 +211,10 @@ export function findRegionSeeds(
 /**
  * Find planet names for a given portal code and galaxy.
  * Returns all planet names generated from that system.
+ *
+ * @deprecated
+ * This helper is associated with the experimental Reverse Search feature.
+ * Use with caution — results are for exploration and debugging only.
  */
 export function findPlanetNames(
   portalCode: bigint,
@@ -210,6 +230,11 @@ export function findPlanetNames(
 
 /**
  * Validate a name for reverse search.
+ *
+ * @deprecated
+ * This helper is associated with the experimental Reverse Search feature.
+ * Use with caution — validation is heuristic and does not guarantee
+ * that Reverse Search will produce valid or reachable Portal Codes.
  *
  * @param name - Name to validate
  * @param type - Type of name: "system", "region", or "planet"

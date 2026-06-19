@@ -2,6 +2,10 @@
 /**
  * Reverse Search — find coordinates from a system or region name.
  *
+ * WARNING: Reverse Search is experimental and not recommended for production use.
+ * Results are not guaranteed to be valid or reachable Portal Codes.
+ * Use only for exploration, debugging, or research purposes.
+ *
  * Usage:
  *   npx tsx examples/reverse-search.ts <name> <galaxy> [options]
  *
@@ -63,6 +67,10 @@ function parseFlag(args: string[], name: string): string | undefined {
 // ─── Main ─────────────────────────────────────────────────────────────
 
 function main() {
+  // Warning: Reverse Search is experimental and may return invalid or unreachable Portal Codes.
+  // Validate results before use. This feature is for exploration and debugging only.
+  console.error("WARNING: Reverse Search is experimental. Results may include invalid Portal Codes.");
+  console.error("");
   const args = process.argv.slice(2);
   const positional = args.filter(a => !a.startsWith("--"));
 
