@@ -14,8 +14,6 @@ C# 版 [SystemNameCalculator](https://github.com/andraemon/SystemNameCalculator)
 | Region Name 生成 | リージョン名の生成（装飾語付き対応） |
 | Planet Name 生成 | プラネット名の生成（11 スタイル対応） |
 | Reverse Search | 名前から座標を検索 |
-| Name Validation | 生成された名前・入力名のバリデーション |
-| Portal Code Validity Check | ポータルコードの座標範囲・銀河中心除外チェック |
 
 ## Usage
 
@@ -60,17 +58,6 @@ for (const seed of ps.planet_seeds) {
 // "Nock O23", "Hasenden VII", "Cogge", "Vassis Major", "Ibata 17/T1", "Sissica"
 ```
 
-### 名前生成
-
-```typescript
-import { generateName, Alphasets } from "system-name-calculator-ts";
-
-// generateName はシードのバイト配列とアルファセットから名前を生成する
-const seed = new Uint8Array([0x20, 0x21, 0x01, 0xd4, 0x06, 0x77, 0x00, 0x00]);
-const name = generateName(seed, Alphasets, 4, 0);
-console.log(name); // 生成された名前
-```
-
 ### Reverse Search
 
 ```typescript
@@ -106,25 +93,6 @@ npx tsx examples/reverse-search.ts "Loytkara" 0 --start 00000000 --end FFFFFFFF
 
 # JSON 出力
 npx tsx examples/portal-lookup.ts 202101D40677 0 --json
-```
-
-### Name Validation
-
-```typescript
-import { isValidSystemName, isValidRegionName, isValidPlanetName, validateName } from "system-name-calculator-ts";
-
-// システム名のバリデーション
-console.log(isValidSystemName("Loytkara"));       // { valid: true }
-console.log(isValidSystemName("loytkara"));        // { valid: false, reason: "..." }
-
-// リージョン名のバリデーション
-console.log(isValidRegionName("Drlenj Expanse"));  // { valid: true }
-
-// プラネット名のバリデーション
-console.log(isValidPlanetName("Nock O23"));         // { valid: true }
-
-// 統合バリデーション
-console.log(validateName("Loytkara", "system"));    // { valid: true }
 ```
 
 ## Compatibility
