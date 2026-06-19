@@ -37,7 +37,7 @@ console.log(isValidPortal(portal)); // true
 
 // 銀河座標
 const coords = portalToGalacticCoords(portal);
-console.log(coords); // { x: 1655, y: 1, z: -704 }
+console.log(coords); // "0E76:0080:08A3:0210"
 
 // システム名・リージョン名
 console.log(systemName(portal, galaxy));   // "Loytkara"

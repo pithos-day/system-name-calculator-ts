@@ -15,47 +15,8 @@ import {
   regionName,
   planetSeeds,
   planetName,
+  portalToGalacticCoords,
 } from "../src/index.js";
-
-// ─── Coordinate Conversion ────────────────────────────────────────────
-
-const COORD_OFFSET_XZ = 2047;
-const COORD_OFFSET_Y = 127;
-
-/**
- * Convert portal code to galactic coordinates string.
- *
- * Portal format: 0xPSSSYYZZZXXX
- *   P  = planet id (4 bits)
- *   SSS = system id (12 bits)
- *   YY  = Y coordinate (8 bits, signed: 0x80-0xFF = -128 to -1)
- *   ZZZ = Z coordinate (12 bits)
- *   XXX = X coordinate (12 bits)
- *
- * Galactic coordinates: XXXX:YYYY:ZZZZ:SSSS
- *   X = raw X + 2047
- *   Y = signed(raw Y) + 127
- *   Z = raw Z + 2047
- *   S = system id
- */
-function portalToGalacticCoords(portal: bigint): string {
-  const rawX = Number(portal & 0xFFFn);
-  const rawY = Number((portal >> 24n) & 0xFFn);
-  const rawZ = Number((portal >> 12n) & 0xFFFn);
-  const systemId = Number((portal >> 32n) & 0xFFFn);
-
-  const x = rawX + COORD_OFFSET_XZ;
-  const ySigned = rawY >= 0x80 ? rawY - 256 : rawY;
-  const y = ySigned + COORD_OFFSET_Y;
-  const z = rawZ + COORD_OFFSET_XZ;
-
-  const hexX = x.toString(16).toUpperCase().padStart(4, "0");
-  const hexY = y.toString(16).toUpperCase().padStart(4, "0");
-  const hexZ = z.toString(16).toUpperCase().padStart(4, "0");
-  const hexS = systemId.toString(16).toUpperCase().padStart(4, "0");
-
-  return `${hexX}:${hexY}:${hexZ}:${hexS}`;
-}
 
 // ─── Main ─────────────────────────────────────────────────────────────
 

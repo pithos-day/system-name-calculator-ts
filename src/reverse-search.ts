@@ -293,38 +293,48 @@ function u32ToLEBytes(val: number): number[] {
 
 // ─── Portal Validation ────────────────────────────────────────────────
 
+const COORD_OFFSET_XZ = 2047;
+const COORD_OFFSET_Y = 127;
+
 /**
- * Extract signed galactic coordinates from a portal code.
+ * Convert a portal code to galactic coordinates string.
  *
  * Portal format: 0xPSSSYYZZZXXX
  *   rawX = XXX (12 bits, 0-4095)
  *   rawY = YY  (8 bits, 0-255, signed)
  *   rawZ = ZZZ (12 bits, 0-4095)
+ *   SSS = system id (12 bits)
  *
- * Signed coordinates:
- *   X = signExtend(rawX, 12) → range -2048 to 2047
- *   Y = signExtend(rawY, 8)  → range -128 to 127
- *   Z = signExtend(rawZ, 12) → range -2048 to 2047
+ * Output format: "XXXX:YYYY:ZZZZ:SSSS"
+ *   X = rawX + 2047
+ *   Y = signed(rawY) + 127
+ *   Z = rawZ + 2047
+ *   S = systemId
+ *   Each value is 4-digit uppercase hex, zero-padded.
  */
-export function portalToGalacticCoords(portal: bigint): { x: number; y: number; z: number } {
+export function portalToGalacticCoords(portal: bigint): string {
   const rawX = Number(portal & 0xFFFn);
   const rawY = Number((portal >> 24n) & 0xFFn);
   const rawZ = Number((portal >> 12n) & 0xFFFn);
+  const systemId = Number((portal >> 32n) & 0xFFFn);
 
-  // Sign-extend 12-bit values
-  const x = rawX >= 0x800 ? rawX - 0x1000 : rawX;
-  // Sign-extend 8-bit value
-  const y = rawY >= 0x80 ? rawY - 0x100 : rawY;
-  // Sign-extend 12-bit values
-  const z = rawZ >= 0x800 ? rawZ - 0x1000 : rawZ;
+  const x = rawX + COORD_OFFSET_XZ;
+  const ySigned = rawY >= 0x80 ? rawY - 256 : rawY;
+  const y = ySigned + COORD_OFFSET_Y;
+  const z = rawZ + COORD_OFFSET_XZ;
 
-  return { x, y, z };
+  const hexX = (x & 0xFFFF).toString(16).toUpperCase().padStart(4, "0");
+  const hexY = (y & 0xFFFF).toString(16).toUpperCase().padStart(4, "0");
+  const hexZ = (z & 0xFFFF).toString(16).toUpperCase().padStart(4, "0");
+  const hexS = systemId.toString(16).toUpperCase().padStart(4, "0");
+
+  return `${hexX}:${hexY}:${hexZ}:${hexS}`;
 }
 
 /**
  * Check if a portal code represents a valid, reachable location.
  *
- * Valid coordinate ranges:
+ * Computes signed galactic coordinates directly from raw portal bits:
  *   Y: -126 to 126
  *   X: -2047 to 2046
  *   Z: -2047 to 2046
@@ -333,7 +343,14 @@ export function portalToGalacticCoords(portal: bigint): { x: number; y: number; 
  *   Y² + Z² + X² < 64 → unreachable
  */
 export function isValidPortal(portal: bigint): boolean {
-  const { x, y, z } = portalToGalacticCoords(portal);
+  const rawX = Number(portal & 0xFFFn);
+  const rawY = Number((portal >> 24n) & 0xFFn);
+  const rawZ = Number((portal >> 12n) & 0xFFFn);
+
+  // Sign-extend to signed coordinates
+  const x = rawX >= 0x800 ? rawX - 0x1000 : rawX;
+  const y = rawY >= 0x80 ? rawY - 0x100 : rawY;
+  const z = rawZ >= 0x800 ? rawZ - 0x1000 : rawZ;
 
   // Check coordinate ranges
   if (y < -126 || y > 126) return false;

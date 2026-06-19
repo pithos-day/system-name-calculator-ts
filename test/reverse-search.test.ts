@@ -121,87 +121,101 @@ describe("Portal Validation", () => {
     );
   }
 
+  // Helper to parse portalToGalacticCoords string output into signed values
+  function parseCoords(str: string): { x: number; y: number; z: number } {
+    const [hx, hy, hz] = str.split(":");
+    const x = parseInt(hx!, 16) - 2047;
+    const yRaw = parseInt(hy!, 16);
+    const y = yRaw >= 0x8000 ? yRaw - 0x10000 : yRaw;
+    const z = parseInt(hz!, 16) - 2047;
+    return { x, y, z };
+  }
+
   describe("portalToGalacticCoords", () => {
+    it("returns XXXX:YYYY:ZZZZ:SSSS format string", () => {
+      const portal = buildPortal(0x321, 0xFC, 0x63C, 0x02D);
+      const coords = portalToGalacticCoords(portal);
+      expect(typeof coords).toBe("string");
+      expect(coords).toMatch(/^[0-9A-F]{4}:[0-9A-F]{4}:[0-9A-F]{4}:[0-9A-F]{4}$/);
+    });
+
     it("extracts coordinates from valid portal", () => {
-      // rawX=0x321=801, rawY=0xFC=252(signed=-4), rawZ=0x63C=1596
+      // rawX=0x321=801, rawY=0xFC=252(signed=-4), rawZ=0x63C=1596, sysId=0x02D=45
       const portal = buildPortal(0x321, 0xFC, 0x63C, 0x02D);
       const coords = portalToGalacticCoords(portal);
 
-      expect(coords.x).toBe(801);     // rawX < 0x800
-      expect(coords.y).toBe(-4);      // 0xFC = 252, signed = -4
-      expect(coords.z).toBe(1596);    // rawZ < 0x800
+      // X = 801 + 2047 = 2848 = 0x0B20
+      // Y = -4 + 127 = 123 = 0x007B
+      // Z = 1596 + 2047 = 3643 = 0x0E3B
+      // S = 45 = 0x002D
+      expect(coords).toBe("0B20:007B:0E3B:002D");
     });
 
-    it("sign-extends 12-bit X correctly", () => {
-      // rawX=0xFFF = 4095, signed = -1
+    it("offsets 12-bit X correctly (+2047)", () => {
+      // rawX=0xFFF = 4095, X = 4095 + 2047 = 6142 = 0x17FE
       const portal = buildPortal(0xFFF, 0, 0, 0);
       const coords = portalToGalacticCoords(portal);
-      expect(coords.x).toBe(-1);
+      expect(coords.startsWith("17FE:")).toBe(true);
+      expect(parseCoords(coords).x).toBe(4095);
     });
 
-    it("sign-extends 12-bit Z correctly", () => {
-      // rawZ=0x800 = 2048, signed = -2048
+    it("offsets 12-bit Z correctly (+2047)", () => {
+      // rawZ=0x800 = 2048, Z = 2048 + 2047 = 4095 = 0x0FFF
       const portal = buildPortal(0, 0, 0x800, 0);
       const coords = portalToGalacticCoords(portal);
-      expect(coords.z).toBe(-2048);
+      expect(parseCoords(coords).z).toBe(2048);
     });
 
-    it("sign-extends 8-bit Y correctly", () => {
-      // rawY=0x80 = 128, signed = -128
+    it("offsets 8-bit Y correctly (+127, signed)", () => {
+      // rawY=0x80 = 128, signed = -128, Y = -128 + 127 = -1 = 0xFFFF
       const portal = buildPortal(0, 0x80, 0, 0);
       const coords = portalToGalacticCoords(portal);
-      expect(coords.y).toBe(-128);
+      expect(parseCoords(coords).y).toBe(-1);
+    });
+
+    it("extracts systemId in 4th field", () => {
+      const portal = buildPortal(0, 0, 0, 0x123);
+      const coords = portalToGalacticCoords(portal);
+      expect(coords.endsWith(":0123")).toBe(true);
     });
   });
 
   describe("isValidPortal - Valid boundary values", () => {
     it("Y=-126 is valid", () => {
       // rawY for Y=-126: -126 + 256 = 130 = 0x82
-      // Use valid X=2046, Z=2046 to stay within range
-      const portal = buildPortal(0x7FE, 0x82, 0x7FE, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.y).toBe(-126);
+      // Use valid rawX=2046 (X=2046), rawZ=2046 (Z=2046) to stay within range
+      const portal = buildPortal(2046, 0x82, 2046, 0);
       expect(isValidPortal(portal)).toBe(true);
     });
 
     it("Y=126 is valid", () => {
       // rawY for Y=126: 126 = 0x7E
-      const portal = buildPortal(0x7FE, 0x7E, 0x7FE, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.y).toBe(126);
+      const portal = buildPortal(2046, 0x7E, 2046, 0);
       expect(isValidPortal(portal)).toBe(true);
     });
 
     it("X=-2047 is valid", () => {
-      // rawX for X=-2047: -2047 + 4096 = 2049 = 0x801
-      // Use rawY=0 (Y=0) which is valid
-      const portal = buildPortal(0x801, 0, 0x7FE, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.x).toBe(-2047);
+      // rawX for X=-2047: 0x801 = 2049 (sign-extends to -2047)
+      // Use rawY=0 (Y=0) which is valid, rawZ=2046 (Z=2046)
+      const portal = buildPortal(0x801, 0, 2046, 0);
       expect(isValidPortal(portal)).toBe(true);
     });
 
     it("X=2046 is valid", () => {
       // rawX for X=2046: 2046 = 0x7FE
-      const portal = buildPortal(0x7FE, 0, 0x7FE, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.x).toBe(2046);
+      const portal = buildPortal(0x7FE, 0, 2046, 0);
       expect(isValidPortal(portal)).toBe(true);
     });
 
     it("Z=-2047 is valid", () => {
-      // rawZ for Z=-2047: -2047 + 4096 = 2049 = 0x801
-      const portal = buildPortal(0x7FE, 0, 0x801, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.z).toBe(-2047);
+      // rawZ for Z=-2047: 0x801 = 2049 (sign-extends to -2047)
+      const portal = buildPortal(2046, 0, 0x801, 0);
       expect(isValidPortal(portal)).toBe(true);
     });
 
     it("Z=2046 is valid", () => {
       // rawZ for Z=2046: 2046 = 0x7FE
-      const portal = buildPortal(0x7FE, 0, 0x7FE, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.z).toBe(2046);
+      const portal = buildPortal(2046, 0, 0x7FE, 0);
       expect(isValidPortal(portal)).toBe(true);
     });
   });
@@ -210,144 +224,93 @@ describe("Portal Validation", () => {
     it("Y=-127 is invalid (below range)", () => {
       // rawY for Y=-127: -127 + 256 = 129 = 0x81
       const portal = buildPortal(0x800, 0x81, 0x800, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.y).toBe(-127);
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("Y=127 is invalid (above range)", () => {
       // rawY for Y=127: 127 = 0x7F
       const portal = buildPortal(0x800, 0x7F, 0x800, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.y).toBe(127);
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("X=-2048 is invalid (below range)", () => {
-      // rawX for X=-2048: -2048 + 4096 = 2048 = 0x800
-      const portal = buildPortal(0x800, 0x80, 0x800, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.x).toBe(-2048);
+      // rawX for X=-2048: 0x800 = 2048
+      const portal = buildPortal(0x800, 0, 0x800, 0);
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("X=2047 is invalid (above range)", () => {
-      // rawX for X=2047: 2047 = 0x7FF
-      const portal = buildPortal(0x7FF, 0x80, 0x800, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.x).toBe(2047);
+      // rawX for X=2047: 0x7FF = 2047
+      const portal = buildPortal(0x7FF, 0, 0x800, 0);
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("Z=-2048 is invalid (below range)", () => {
-      // rawZ for Z=-2048: -2048 + 4096 = 2048 = 0x800
-      const portal = buildPortal(0x800, 0x80, 0x800, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.z).toBe(-2048);
+      // rawZ for Z=-2048: 0x800 = 2048
+      const portal = buildPortal(0x800, 0, 0x800, 0);
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("Z=2047 is invalid (above range)", () => {
-      // rawZ for Z=2047: 2047 = 0x7FF
-      const portal = buildPortal(0x800, 0x80, 0x7FF, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords.z).toBe(2047);
+      // rawZ for Z=2047: 0x7FF = 2047
+      const portal = buildPortal(0x800, 0, 0x7FF, 0);
       expect(isValidPortal(portal)).toBe(false);
     });
   });
 
   describe("isValidPortal - Galactic center exclusion zone", () => {
-    it("origin (0,0,0) is invalid", () => {
-      // rawX=0x800=-2048, rawY=0x80=-128, rawZ=0x800=-2048
-      // But (0,0,0) requires rawX=2047, rawY=127, rawZ=2047 which are out of range
-      // So use coords close to origin that are in valid range
-      // X=0: rawX=2047=0x7FF (invalid, X=2047)
-      // We need to use the closest valid coords
-      // X=1, Y=0, Z=0: dist²=1 < 64 → invalid
-      const portal = buildPortal(0x7FE, 0x7F, 0x800, 0); // X=2046, Y=127(invalid), Z=-2048(invalid)
-      // Let's use valid coords: X=1, Y=0, Z=0
-      // rawX = 1 + 2047 = 2048 = 0x800 (signed X=-2048, invalid)
-      // Actually rawX = X + 2047 in unsigned, but portal stores unsigned rawX
-      // So for X=1: rawX = 1 + 2047 = 2048 (but this is > 4095? no, 2048 < 4096)
-      // Wait, the conversion is: X = signExtend(rawX, 12)
-      // For X=1: rawX = 1 (since 1 < 2048, no sign extension needed)
-      const portal1 = buildPortal(1, 0x7F, 0x800, 0); // X=1, Y=127(invalid)
-      // Use Y=0: rawY=0
-      const portal2 = buildPortal(1, 0, 0x800, 0); // X=1, Y=0, Z=-2048(invalid)
-      // Use Z=0: rawZ=0
-      const portal3 = buildPortal(1, 0, 0, 0); // X=1, Y=0, Z=0
-      const coords = portalToGalacticCoords(portal3);
-      expect(coords).toEqual({ x: 1, y: 0, z: 0 });
-      expect(isValidPortal(portal3)).toBe(false); // dist²=1 < 64
+    it("(1,0,0) is invalid (dist²=1 < 64)", () => {
+      const portal = buildPortal(1, 0, 0, 0);
+      expect(isValidPortal(portal)).toBe(false);
     });
 
     it("(4,0,0) is invalid (dist²=16 < 64)", () => {
       const portal = buildPortal(4, 0, 0, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 4, y: 0, z: 0 });
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("(7,0,0) is invalid (dist²=49 < 64)", () => {
       const portal = buildPortal(7, 0, 0, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 7, y: 0, z: 0 });
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("(8,0,0) is valid (dist²=64 >= 64)", () => {
       const portal = buildPortal(8, 0, 0, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 8, y: 0, z: 0 });
       expect(isValidPortal(portal)).toBe(true);
     });
 
     it("(5,5,0) is invalid (dist²=50 < 64)", () => {
       const portal = buildPortal(5, 5, 0, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 5, y: 5, z: 0 });
       expect(isValidPortal(portal)).toBe(false);
     });
 
     it("(5,5,1) is invalid (dist²=51 < 64)", () => {
       const portal = buildPortal(5, 5, 1, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 5, y: 5, z: 1 });
       expect(isValidPortal(portal)).toBe(false);
     });
 
-    it("(5,5,2) is valid (dist²=54 >= 64? No, 54 < 64)", () => {
+    it("(5,5,2) is invalid (dist²=54 < 64)", () => {
       const portal = buildPortal(5, 5, 2, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 5, y: 5, z: 2 });
-      expect(isValidPortal(portal)).toBe(false); // 25+25+4=54 < 64
+      expect(isValidPortal(portal)).toBe(false);
     });
 
-    it("(6,4,2) is valid (dist²=56 >= 64? No, 56 < 64)", () => {
+    it("(6,4,2) is invalid (dist²=56 < 64)", () => {
       const portal = buildPortal(6, 4, 2, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 6, y: 4, z: 2 });
-      expect(isValidPortal(portal)).toBe(false); // 36+16+4=56 < 64
+      expect(isValidPortal(portal)).toBe(false);
     });
 
     it("(6,4,4) is valid (dist²=68 >= 64)", () => {
       const portal = buildPortal(6, 4, 4, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 6, y: 4, z: 4 });
-      expect(isValidPortal(portal)).toBe(true); // 36+16+16=68 >= 64
+      expect(isValidPortal(portal)).toBe(true);
     });
 
     it("(0,8,0) is valid (dist²=64 >= 64)", () => {
       const portal = buildPortal(0, 8, 0, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 0, y: 8, z: 0 });
       expect(isValidPortal(portal)).toBe(true);
     });
 
     it("(0,0,8) is valid (dist²=64 >= 64)", () => {
       const portal = buildPortal(0, 0, 8, 0);
-      const coords = portalToGalacticCoords(portal);
-      expect(coords).toEqual({ x: 0, y: 0, z: 8 });
       expect(isValidPortal(portal)).toBe(true);
     });
   });
