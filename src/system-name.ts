@@ -1,10 +1,7 @@
 /**
  * System name generation from coordinates.
  *
- * Ported from C# SystemNameCalculator.NameGen.SystemName
- * @see SystemNameCalculator/SystemNameCalculator/NameGen/SystemName.cs
- *
- * Aligned with nms_namegen system.py systemName() behavior including
+ * Ported from nms_namegen system.py systemName() behavior including
  * hyphenated names and Roman numeral suffixes.
  */
 
@@ -20,6 +17,40 @@ import {
 } from "./byte-utils.js";
 import { CACHE_MULTIPLIER, updateSeedCache } from "./seed.js";
 import { generateName } from "./generator.js";
+
+// ─── Public API (matching nms_namegen system.py) ─────────────────────
+
+/**
+ * Convert a portal code + galaxy to the 12-byte seed format
+ * expected by formatSystemName.
+ *
+ * Matches nms_namegen system.py:
+ *   galacticCoords = portal & 0xFFFFFFFF
+ *   systemIndex    = ((portal & 0x0FFF00000000) >> 24) | galaxy
+ */
+export function portalToSeed(portal: bigint, galaxy: number): number[] {
+  const galacticCoords = portal & 0xFFFFFFFFn;
+  const systemIndex = ((portal & 0x0fff00000000n) >> 24n) | BigInt(galaxy);
+
+  const seed = new Array<number>(12).fill(0);
+
+  for (let i = 0; i < 4; i++) {
+    seed[i] = Number((galacticCoords >> BigInt(i * 8)) & 0xFFn);
+  }
+  for (let i = 0; i < 4; i++) {
+    seed[4 + i] = Number((systemIndex >> BigInt(i * 8)) & 0xFFn);
+  }
+
+  return seed;
+}
+
+/**
+ * Generate a system name from a portal code and galaxy.
+ * Matches nms_namegen system.py systemName(portal_code, galaxy).
+ */
+export function systemName(portalCode: bigint, galaxy: number): string {
+  return formatSystemName(portalToSeed(portalCode, galaxy));
+}
 
 // ─── Constants ────────────────────────────────────────────────────────
 
