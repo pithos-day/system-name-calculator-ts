@@ -317,10 +317,10 @@ describe("Portal Validation", () => {
   });
 
   describe("galacticCoordsToPortal", () => {
-    it("converts coords string to portal hex string", () => {
+    it("converts coords string to portal hex string starting with 1", () => {
       const portal = galacticCoordsToPortal("0B20:007B:0E3B:002D");
       expect(typeof portal).toBe("string");
-      expect(portal).toMatch(/^[0-9A-F]{12}$/);
+      expect(portal).toMatch(/^1[0-9A-F]{11}$/);
     });
 
     it("roundtrips with portalToGalacticCoords", () => {
@@ -328,16 +328,19 @@ describe("Portal Validation", () => {
       const coords = portalToGalacticCoords(original);
       const reconstructed = galacticCoordsToPortal(coords);
 
-      // Should match lower 44 bits (planet bits P=0 in reconstructed)
+      // Compare lower 44 bits (planet bits differ: original P=0, reconstructed P=1)
       const origMasked = (original & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
-      expect(reconstructed).toBe(origMasked);
+      const reconMasked = (BigInt("0x" + reconstructed) & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
+      expect(reconMasked).toBe(origMasked);
     });
 
     it("roundtrips with known fixture portal", () => {
       const coords = portalToGalacticCoords(PORTAL);
       const reconstructed = galacticCoordsToPortal(coords);
+      // Mask planet bits for comparison (fixture P=2, reconstructed P=1)
+      const reconMasked = (BigInt("0x" + reconstructed) & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
       const expected = (PORTAL & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
-      expect(reconstructed).toBe(expected);
+      expect(reconMasked).toBe(expected);
     });
 
     it("handles negative Y coordinates", () => {
@@ -345,7 +348,8 @@ describe("Portal Validation", () => {
       const portal = buildPortal(0, 0x80, 0, 0);
       const coords = portalToGalacticCoords(portal);
       const reconstructed = galacticCoordsToPortal(coords);
-      expect(reconstructed).toBe("000080000000");
+      // P=1, sysId=0, rawY=0x80, rawZ=0, rawX=0
+      expect(reconstructed).toBe("100080000000");
     });
 
     it("handles max boundary values", () => {
@@ -353,8 +357,10 @@ describe("Portal Validation", () => {
       const portal = buildPortal(0xFFF, 0x7D, 0xFFF, 0xFFF);
       const coords = portalToGalacticCoords(portal);
       const reconstructed = galacticCoordsToPortal(coords);
-      const expected = portal.toString(16).toUpperCase().padStart(12, "0");
-      expect(reconstructed).toBe(expected);
+      // Mask planet bits for comparison
+      const reconMasked = (BigInt("0x" + reconstructed) & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
+      const expected = (portal & 0xFFFFFFFFFFn).toString(16).toUpperCase().padStart(12, "0");
+      expect(reconMasked).toBe(expected);
     });
 
     it("throws on invalid format", () => {

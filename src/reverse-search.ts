@@ -352,7 +352,7 @@ export function portalToGalacticCoords(portal: bigint): string {
  *   SSSS = system id (unsigned hex)
  *
  * Output: Portal code as uppercase hex string (no 0x prefix).
- *   Format: "PSSSYYZZZXXX" (12 hex digits, P=0)
+ *   Format: "PSSSYYZZZXXX" (12 hex digits, P=1)
  */
 export function galacticCoordsToPortal(coords: string): string {
   const parts = coords.split(":");
@@ -375,8 +375,9 @@ export function galacticCoordsToPortal(coords: string): string {
   const rawY = (ySigned - COORD_OFFSET_Y) & 0xFF;
   const rawZ = (zRaw - COORD_OFFSET_XZ) & 0xFFF;
 
-  // Build portal: 0x0SSSYYZZZXXX
-  const portal = BigInt(sysId & 0xFFF) << 32n |
+  // Build portal: 0x1SSSYYZZZXXX (planet index = 1)
+  const portal = (1n << 44n) |
+    BigInt(sysId & 0xFFF) << 32n |
     BigInt(rawY) << 24n |
     BigInt(rawZ) << 12n |
     BigInt(rawX);
