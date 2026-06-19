@@ -24,6 +24,7 @@ import {
   formatSystemName,
   formatRegionName,
   reconstructPortal,
+  validateName,
 } from "../src/index.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -102,6 +103,13 @@ function main() {
 
   const galCoordsStart = startHex ? parseInt(startHex, 16) : undefined;
   const galCoordsEnd = endHex ? parseInt(endHex, 16) : undefined;
+
+  const validation = validateName(name, searchType as "system" | "region");
+  if (!validation.valid) {
+    console.error(`Name validation failed: ${validation.reason}`);
+    console.error("Note: reverse search will still run, but results may be empty.");
+    console.error("");
+  }
 
   if (!startHex && !endHex) {
     console.error("WARNING: No search range specified. Defaulting to full range (2^32).");
