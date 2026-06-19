@@ -17,12 +17,6 @@ C# 版 [SystemNameCalculator](https://github.com/andraemon/SystemNameCalculator)
 
 ## Usage
 
-### インストール
-
-```bash
-pnpm add system-name-calculator-ts
-```
-
 ### Portal Code から情報を取得
 
 ```typescript
