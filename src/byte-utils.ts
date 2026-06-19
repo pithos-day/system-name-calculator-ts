@@ -12,7 +12,7 @@
 // ─── Constants ────────────────────────────────────────────────────────
 
 const MASK_32 = 0xFFFFFFFFn;
-const BYTE_0XFF = 0xFF;
+const BYTE_MASK = 0xFF;
 
 // ─── Conversion: byte[] ↔ bigint ─────────────────────────────────────
 
@@ -83,7 +83,7 @@ export function bigintToBytes(value: bigint): number[] {
   const bytes: number[] = [];
   let v = value;
   while (v > 0n) {
-    bytes.push(Number(v & BigInt(BYTE_0XFF)));
+    bytes.push(Number(v & BigInt(BYTE_MASK)));
     v >>= 8n;
   }
   return bytes;
@@ -129,14 +129,14 @@ export function multiply(a: number[], b: number[]): number[] {
     let rem = 0;
     for (let j = 0; j < b.length; j++) {
       const prd = a[i]! * b[j]! + rem;
-      rem = (prd >> 8) & BYTE_0XFF;
-      const res = prd & BYTE_0XFF;
+      rem = (prd >> 8) & BYTE_MASK;
+      const res = prd & BYTE_MASK;
       const idx = i + j;
 
       if (idx < result.length) {
         const sum = result[idx]! + res;
-        result[idx] = sum & BYTE_0XFF;
-        const carry = (sum >> 8) & BYTE_0XFF;
+        result[idx] = sum & BYTE_MASK;
+        const carry = (sum >> 8) & BYTE_MASK;
         if (carry !== 0) addCarryAt(result, idx + 1, carry);
       } else {
         result.push(res);
@@ -251,7 +251,7 @@ export function or(a: number[], b: number[]): number[] {
 export function sxd(arr: number[], extend: number): number[] {
   if (arr.length >= extend) return [...arr];
   const result = [...arr];
-  const signByte = (arr[arr.length - 1]! >> 7) === 1 ? BYTE_0XFF : 0;
+  const signByte = (arr[arr.length - 1]! >> 7) === 1 ? BYTE_MASK : 0;
   while (result.length < extend) {
     result.push(signByte);
   }
@@ -273,42 +273,40 @@ export function zxd(arr: number[], extend: number): number[] {
 
 // ─── Internal Helpers ─────────────────────────────────────────────────
 
-function addCarryAt(arr: number[], ind: number, carry: number): void {
-  if (ind < arr.length) {
-    const sum = arr[ind]! + carry;
-    arr[ind] = sum & BYTE_0XFF;
-    const nextCarry = (sum >> 8) & BYTE_0XFF;
-    if (nextCarry !== 0) addCarryAt(arr, ind + 1, nextCarry);
+function addCarryAt(arr: number[], index: number, carry: number): void {
+  if (index < arr.length) {
+    const sum = arr[index]! + carry;
+    arr[index] = sum & BYTE_MASK;
+    const nextCarry = (sum >> 8) & BYTE_MASK;
+    if (nextCarry !== 0) addCarryAt(arr, index + 1, nextCarry);
   } else {
     arr.push(carry);
   }
 }
 
-function addByteAt(arr: number[], byteVal: number, ind: number): void {
-  if (ind < arr.length) {
-    const sum = arr[ind]! + byteVal;
-    arr[ind] = sum & BYTE_0XFF;
-    const carry = (sum >> 8) & BYTE_0XFF;
-    if (carry !== 0) addCarryAt(arr, ind + 1, carry);
+function addByteAt(arr: number[], byteVal: number, index: number): void {
+  if (index < arr.length) {
+    const sum = arr[index]! + byteVal;
+    arr[index] = sum & BYTE_MASK;
+    const carry = (sum >> 8) & BYTE_MASK;
+    if (carry !== 0) addCarryAt(arr, index + 1, carry);
   } else {
     arr.push(byteVal);
   }
 }
 
 /**
- * Subtract a byte from the result array at position ind.
- * Matches C# private Sub(op1, op2, ind) which computes op1 - op2[ind].
+ * Subtract a byte from the result array at position index.
+ * Matches C# private Sub(op1, op2, index) which computes op1 - op2[index].
  * Here byteVal is the op1 byte, arr is the result/op2 array.
  */
-function subByteAt(arr: number[], byteVal: number, ind: number): void {
-  if (ind < arr.length) {
-    // C# does: sum = (short)(op1 - op2[ind])
-    // So: byteVal - arr[ind]
-    const diff = byteVal - arr[ind]!;
-    arr[ind] = diff & BYTE_0XFF;
-    const rem = (diff >> 8) & BYTE_0XFF; // borrow indicator (0xFF when negative)
+function subByteAt(arr: number[], byteVal: number, index: number): void {
+  if (index < arr.length) {
+    const diff = byteVal - arr[index]!;
+    arr[index] = diff & BYTE_MASK;
+    const rem = (diff >> 8) & BYTE_MASK; // borrow indicator (0xFF when negative)
     if (rem !== 0) {
-      subByteAt(arr, rem, ind + 1);
+      subByteAt(arr, rem, index + 1);
     }
   } else {
     arr.push(byteVal);
@@ -318,32 +316,32 @@ function subByteAt(arr: number[], byteVal: number, ind: number): void {
 type LogicalOp = "xor" | "and" | "or";
 
 function genericLogical(a: number[], b: number[], op: LogicalOp): number[] {
-  let manlet: number[];
-  let chungus: number[];
+  let longer: number[];
+  let shorter: number[];
 
   if (a.length > b.length) {
-    chungus = [...a];
-    manlet = [...b];
-    while (manlet.length < chungus.length) manlet.push(0);
+    longer = [...a];
+    shorter = [...b];
+    while (shorter.length < longer.length) shorter.push(0);
   } else {
-    chungus = [...b];
-    manlet = [...a];
-    while (manlet.length < chungus.length) manlet.push(0);
+    longer = [...b];
+    shorter = [...a];
+    while (shorter.length < longer.length) shorter.push(0);
   }
 
-  for (let i = 0; i < chungus.length; i++) {
+  for (let i = 0; i < longer.length; i++) {
     switch (op) {
       case "xor":
-        chungus[i]! ^= manlet[i]!;
+        longer[i]! ^= shorter[i]!;
         break;
       case "and":
-        chungus[i]! &= manlet[i]!;
+        longer[i]! &= shorter[i]!;
         break;
       case "or":
-        chungus[i]! |= manlet[i]!;
+        longer[i]! |= shorter[i]!;
         break;
     }
   }
 
-  return chungus;
+  return longer;
 }
