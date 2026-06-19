@@ -16,7 +16,6 @@
 
 import type { SeedRange, WeightData, SearchResult } from "./types.js";
 import { updateSeedUlong, rotateLeft32 } from "./seed.js";
-import { Alphasets } from "./generator.js";
 import {
   vowelInsertedAtStart,
   vowelInsertedAtEnd,
@@ -290,30 +289,6 @@ function u32ToLEBytes(val: number): number[] {
     (val >> 16) & 0xff,
     (val >> 24) & 0xff,
   ];
-}
-
-/**
- * Convert a 64-bit bigint to an 8-byte little-endian array.
- */
-function u64ToBytes(val: bigint): number[] {
-  const bytes: number[] = [];
-  let v = val & 0xffffffffffffffffn;
-  for (let i = 0; i < 8; i++) {
-    bytes.push(Number(v & 0xffn));
-    v >>= 8n;
-  }
-  return bytes;
-}
-
-/**
- * Convert a little-endian byte array to a 64-bit bigint.
- */
-function bytesToU64(bytes: number[]): bigint {
-  let val = 0n;
-  for (let i = bytes.length - 1; i >= 0; i--) {
-    val = (val << 8n) | BigInt(bytes[i]! & 0xff);
-  }
-  return val;
 }
 
 // ─── Portal Validation ────────────────────────────────────────────────

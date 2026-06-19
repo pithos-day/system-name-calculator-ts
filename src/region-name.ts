@@ -53,28 +53,28 @@ export const PROC_ADORNMENTS: string[] = [
  *
  * Matches nms_namegen region.py regionName(portal_code, galaxy) exactly.
  *
- * @param portal_code - Portal code as integer (format: 0xPSSSYYZZZXXX)
+ * @param portalCode - Portal code as integer (format: 0xPSSSYYZZZXXX)
  * @param galaxy - Galaxy number (Euclid = 0)
  * @returns Generated region name with optional adornment
  */
-export function regionName(portal_code: bigint, galaxy: number): string {
+export function regionName(portalCode: bigint, galaxy: number): string {
   // Step 1: Murmur-like hash derivation (region.py lines 48-54)
   let register = BigInt(galaxy) >> 1n;
-  register ^= (BigInt(galaxy) << 32n) | (portal_code & 0xFFFFFFFFn);
+  register ^= (BigInt(galaxy) << 32n) | (portalCode & 0xFFFFFFFFn);
   register = (register * CONST_A) & MASK64;
   register = (((register >> 33n) ^ register) * CONST_B) & MASK64;
   register = (register >> 33n) ^ register;
 
   // Step 2: Derive PRNG seed (region.py lines 56-65)
-  let seed_h =
+  let seedHigh =
     ((((register & 0xFFFF0000n) >> 16n) | ((register & 0x0000FFFFn) << 16n)) ^
       (register & 0xFFFFFFFFn) ^
       (register >> 32n)) &
     MASK64;
 
   let seed = register & 0xFFFFFFFFn;
-  if (seed_h === 0n) seed_h = 1n;
-  seed |= seed_h << 32n;
+  if (seedHigh === 0n) seedHigh = 1n;
+  seed |= seedHigh << 32n;
 
   // Step 3: Initialize PRNG cache from seed
   const cache0: [number[], number[]] = [
@@ -118,16 +118,16 @@ export function regionName(portal_code: bigint, galaxy: number): string {
 /**
  * Legacy API: generate region name from byte array seed.
  *
- * @deprecated Use regionName(portal_code, galaxy) instead.
+ * @deprecated Use regionName(portalCode, galaxy) instead.
  */
 export function formatRegionName(seed: number[]): string {
-  // Convert seed bytes to portal_code and galaxy
+  // Convert seed bytes to portal code and galaxy
   // Seed is little-endian byte array: [galactic_coords (4 bytes LE), upper (4 bytes LE)]
   // But the old C# format uses a different hash, so this is kept for backward compatibility
   // with the reverse-search which uses its own seed derivation.
-  const portal_code = bytesToBigint(seed.slice(0, 4));
+  const portalCode = bytesToBigint(seed.slice(0, 4));
   const galaxy = bytesToBigint(seed.slice(4, 8));
-  return regionName(portal_code, Number(galaxy));
+  return regionName(portalCode, Number(galaxy));
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────
