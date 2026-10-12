@@ -32,13 +32,6 @@
   ],
   "author": "MiMo V2.5",
   "license": "MIT",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.4.0",
-      "onFail": "download"
-    }
-  },
   "devDependencies": {
     "@types/node": "^25.9.3",
     "tsx": "^4.22.4",
