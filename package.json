@@ -30,8 +30,12 @@
     "name-generator",
     "coordinates"
   ],
-  "author": "MiMo V2.5",
+  "author": "pithos",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pithos-day/system-name-calculator-ts.git"
+  },
   "devDependencies": {
     "@types/node": "^25.9.3",
     "tsx": "^4.22.4",
